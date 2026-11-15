@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tab Lock settings</title>
+  <link rel="stylesheet" href="common.css">
+</head>
+<body>
+  <main>
+    <h1>Tab Lock settings</h1>
+    <p class="muted">Everything Tab Lock stores stays in this browser profile. Nothing is ever sent anywhere.</p>
+
+    <section id="auth" class="panel hidden" aria-labelledby="auth-title">
+      <h2 class="first" id="auth-title">Enter your PIN to change settings</h2>
+      <form id="auth-form" autocomplete="off">
+        <label for="auth-secret" id="auth-label">PIN</label>
+        <input id="auth-secret" type="password" autocomplete="off" spellcheck="false" required aria-describedby="auth-msg">
+        <button type="submit" id="auth-submit">Continue</button>
+        <div id="auth-msg" class="msg" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <section id="setup-needed" class="panel hidden">
+      <p>Tab Lock is not set up yet. <a href="onboarding.html">Set it up</a>.</p>
+    </section>
+
+    <div id="settings" class="hidden">
+      <form id="settings-form" class="panel" autocomplete="off">
+        <h2 class="first">Locking</h2>
+        <label for="timeout">Lock after this many minutes of inactivity</label>
+        <input id="timeout" type="number" min="1" max="240" step="1" required aria-describedby="timeout-help">
+        <p id="timeout-help" class="muted">Inactivity means no keyboard or mouse input on this Mac, or (if the box below is ticked) Brave not being the focused app. The check runs about every 30 seconds.</p>
+        <label class="check"><input id="unfocus" type="checkbox"> Count time when Brave is not the focused app as inactivity</label>
+        <label class="check"><input id="startup" type="checkbox"> Lock every time Brave starts</label>
+
+        <fieldset>
+          <legend>Pages that always need the PIN</legend>
+          <label class="check"><input type="checkbox" data-cat="history"> History</label>
+          <label class="check"><input type="checkbox" data-cat="settings"> Settings (all settings pages)</label>
+          <label class="check"><input type="checkbox" data-cat="passwords"> Passwords</label>
+          <label class="check"><input type="checkbox" data-cat="extensions"> Extensions</label>
+          <label class="check"><input type="checkbox" data-cat="downloads"> Downloads</label>
+          <label for="grace">After a correct PIN, allow that page for (minutes)</label>
+          <input id="grace" type="number" min="1" max="30" step="1" required>
+        </fieldset>
+
+        <fieldset>
+          <legend>Wrong PIN</legend>
+          <p class="muted">After 5 wrong attempts, each further attempt has to wait longer: 30 seconds, then 1 minute, 2 minutes and so on, up to 1 hour.</p>
+          <label class="check"><input id="wipe" type="checkbox"> Erase the saved tabs after this many wrong attempts in a row:</label>
+          <input id="wipe-n" type="number" min="6" max="1000" step="1" aria-label="Wrong attempts before erasing saved tabs">
+        </fieldset>
+        <button type="submit">Save settings</button>
+        <div id="settings-msg" class="msg" role="status" aria-live="polite"></div>
+      </form>
+
+      <section class="panel gap" aria-labelledby="pin-title">
+        <h2 class="first" id="pin-title">PIN or passphrase</h2>
+        <p id="managed-note" class="hidden">The PIN is managed by your Mac — rerun the installer to change it.</p>
+        <form id="pin-form" autocomplete="off">
+          <label for="cur">Current PIN or passphrase</label>
+          <input id="cur" type="password" autocomplete="off" spellcheck="false" required>
+          <label for="kind">New type</label>
+          <select id="kind">
+            <option value="passphrase">Passphrase (stronger, at least 8 characters)</option>
+            <option value="pin">PIN (at least 6 digits)</option>
+          </select>
+          <label for="next">New PIN or passphrase</label>
+          <input id="next" type="password" autocomplete="new-password" spellcheck="false" required>
+          <label for="next2">Type it again</label>
+          <input id="next2" type="password" autocomplete="new-password" spellcheck="false" required>
+          <button type="submit">Change</button>
+          <div id="pin-msg" class="msg" role="status" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <section class="panel gap">
+        <h2 class="first">Private windows</h2>
+        <p id="incog-status"></p>
+        <p class="muted">To protect private windows: open <code>brave://extensions</code>, choose Tab Lock → Details, and turn on “Allow in Private”. Private-window tabs are only ever kept in memory, never written to disk. Locking closes private windows, which ends that private session (its logins and cookies are gone). Brave’s private windows with Tor don’t run extensions, so Tab Lock can’t hide or block them.</p>
+        <h2>Keyboard shortcut</h2>
+        <p class="muted">The default is Control+Shift+L on Mac (Ctrl+Shift+L elsewhere). Change it at <code>brave://extensions/shortcuts</code>. Clicking the Tab Lock toolbar button also locks immediately.</p>
+        <button id="lock-now" type="button" class="secondary">Lock now</button>
+      </section>
+    </div>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

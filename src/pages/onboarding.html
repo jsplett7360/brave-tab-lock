@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Set up Tab Lock</title>
+  <link rel="stylesheet" href="common.css">
+</head>
+<body>
+  <main>
+    <h1>Set up Tab Lock</h1>
+    <p>Tab Lock locks this browser profile behind a PIN after inactivity, when Brave starts, or when you press the shortcut. While it is locked, your open tabs are encrypted, closed, and reopened when you unlock.</p>
+
+    <section id="local-setup" class="panel hidden" aria-labelledby="local-title">
+      <h2 class="first" id="local-title">1. Choose a PIN or passphrase</h2>
+      <p class="muted">A passphrase is much stronger. There are only a million 6-digit PINs, so someone who copies this profile’s files from your Mac can try them all offline.</p>
+      <form id="local-form" autocomplete="off">
+        <label for="kind">Type</label>
+        <select id="kind">
+          <option value="passphrase">Passphrase (at least 8 characters)</option>
+          <option value="pin">PIN (at least 6 digits)</option>
+        </select>
+        <label for="s1">PIN or passphrase</label>
+        <input id="s1" type="password" autocomplete="new-password" spellcheck="false" required>
+        <label for="s2">Type it again</label>
+        <input id="s2" type="password" autocomplete="new-password" spellcheck="false" required>
+        <button type="submit">Save</button>
+        <div id="local-msg" class="msg" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <section id="managed-setup" class="panel hidden" aria-labelledby="managed-title">
+      <h2 class="first" id="managed-title">1. Enter your master PIN</h2>
+      <p class="muted">This Mac’s installer set a master PIN for every Brave profile. Enter it once so this profile can encrypt your tabs when it locks.</p>
+      <form id="managed-form" autocomplete="off">
+        <label for="m1" id="m1-label">Master PIN</label>
+        <input id="m1" type="password" autocomplete="off" spellcheck="false" required>
+        <button type="submit">Continue</button>
+        <div id="managed-msg" class="msg" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <section id="done" class="panel hidden" aria-labelledby="done-title">
+      <h2 class="first" id="done-title">Tab Lock is on</h2>
+      <p>By default it locks after 5 minutes of inactivity, whenever Brave starts, and when you press <kbd>Control</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> or click the toolbar button. Change this in <a href="options.html">settings</a>.</p>
+    </section>
+
+    <section class="panel gap" aria-labelledby="next-title">
+      <h2 class="first" id="next-title">2. Recommended next steps</h2>
+      <ul>
+        <li><strong>Private windows:</strong> open <code>brave://extensions</code>, choose Tab Lock → Details, and turn on “Allow in Private”. <span id="incog-status"></span></li>
+        <li><strong>Address bar suggestions:</strong> the address bar can still suggest sites from your history. <span id="omnibox-help">To turn that off, open <code>brave://settings/appearance</code> and turn off “Show autocomplete suggestions in address bar”.</span></li>
+        <li><strong>Other profiles:</strong> each Brave profile has its own Tab Lock with its own PIN, unless the macOS installer set a master PIN.</li>
+      </ul>
+      <h2>What Tab Lock can’t do</h2>
+      <ul class="muted">
+        <li>It is a convenience layer. Your Mac’s lock screen and FileVault are the real protection.</li>
+        <li>Anyone who can read this profile’s files can try PINs offline; a 6-digit PIN falls quickly. Use a passphrase.</li>
+        <li>Tab titles and addresses may already be stored in Brave’s history and session files on disk.</li>
+        <li>Someone can open a different Brave profile, make a new one, or use another browser.</li>
+        <li>Locking closes your tabs, so anything typed but not submitted in a form is lost.</li>
+        <li>Without the macOS installer, Tab Lock can be removed from Brave’s toolbar menu.</li>
+      </ul>
+    </section>
+  </main>
+  <script type="module" src="onboarding.js"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Locked — Tab Lock</title>
+  <link rel="stylesheet" href="common.css">
+</head>
+<body>
+  <div class="center">
+    <main>
+      <div class="panel">
+        <svg class="lockmark" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4.5" y="10.5" width="15" height="10" rx="2.2"></rect>
+          <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"></path>
+          <circle cx="12" cy="15.5" r="1.3"></circle>
+        </svg>
+        <h1 id="title">Browser locked</h1>
+        <p id="subtitle" class="muted">Enter your PIN to reopen your tabs.</p>
+
+        <form id="form" autocomplete="off" class="hidden">
+          <label for="secret" id="secret-label">PIN</label>
+          <input id="secret" type="password" autocomplete="off" spellcheck="false" required aria-describedby="msg">
+          <button id="submit" type="submit">Unlock</button>
+          <div id="msg" class="msg" role="status" aria-live="polite"></div>
+        </form>
+
+        <section id="problems" class="hidden" aria-labelledby="problems-title">
+          <h2 id="problems-title">Some tabs were not reopened</h2>
+          <p id="problems-text" class="muted"></p>
+          <ul id="failed-list" class="list"></ul>
+          <form id="recover-form" autocomplete="off">
+            <label for="recover-secret" id="recover-label">PIN</label>
+            <input id="recover-secret" type="password" autocomplete="off" spellcheck="false" required aria-describedby="recover-msg">
+            <div class="row">
+              <button id="retry" type="submit" class="secondary">Retry restore</button>
+              <button id="recover-old" type="button" class="secondary hidden">Use previous PIN</button>
+              <button id="discard" type="button" class="danger">Discard saved tabs</button>
+            </div>
+            <div id="recover-msg" class="msg" role="status" aria-live="polite"></div>
+          </form>
+        </section>
+
+        <section id="setup" class="hidden">
+          <p>Tab Lock is not set up yet.</p>
+          <a id="setup-link" href="onboarding.html">Set up Tab Lock</a>
+        </section>
+      </div>
+      <p class="muted gap">Tab Lock is a convenience layer. Your Mac's lock screen and FileVault are the real protection.</p>
+    </main>
+  </div>
+  <script type="module" src="lock.js"></script>
+</body>
+</html>

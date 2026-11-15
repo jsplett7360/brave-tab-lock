@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "masterPin": {
+      "title": "Master PIN verification record",
+      "description": "PBKDF2-SHA256 record written by the Tab Lock macOS installer. Contains no PIN.",
+      "type": "object",
+      "properties": {
+        "kind": { "type": "string", "enum": ["pin", "passphrase"] },
+        "iterations": { "type": "integer" },
+        "salt": { "type": "string" },
+        "hash": { "type": "string" }
+      }
+    }
+  }
+}
