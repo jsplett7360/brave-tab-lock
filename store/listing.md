@@ -81,7 +81,7 @@ Certifications: tick all three (no selling/transfer outside approved use cases, 
 unrelated to the single purpose, no creditworthiness/lending use).
 
 ## Privacy policy URL
-`https://github.com/<owner>/<repo>/blob/main/PRIVACY.md` once the repository is public.
+https://github.com/jsplett7360/brave-tab-lock/blob/main/PRIVACY.md
 
 ## Assets
 - Icon: `icons/icon128.png` (96 px artwork + transparent padding, as the image

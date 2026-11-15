@@ -35,4 +35,4 @@ stored. If the macOS profile was installed, remove it in System Settings first.
 
 ## Contact
 
-Open an issue in this project's public repository.
+Open an issue at https://github.com/jsplett7360/brave-tab-lock/issues.

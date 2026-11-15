@@ -60,7 +60,7 @@ Known limits. These are real, not just legal boilerplate:
 
 ## Install (developer / before the store listing)
 
-1. Download or clone this repository.
+1. Download or clone this repository (`git clone https://github.com/jsplett7360/brave-tab-lock`).
 2. Open `brave://extensions`, turn on **Developer mode** (top right).
 3. Click **Load unpacked** and choose this folder (the one containing `manifest.json`).
 4. The setup page opens. Choose a passphrase (recommended) or a 6+ digit PIN.

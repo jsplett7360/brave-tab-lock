@@ -2,7 +2,7 @@
 
 The builder prepared everything below but did not submit, upload or pay anything.
 
-1. **Make the GitHub repo public first** (the privacy policy URL points into it).
+1. ~~Make the GitHub repo public~~ — done: https://github.com/jsplett7360/brave-tab-lock (privacy policy: https://github.com/jsplett7360/brave-tab-lock/blob/main/PRIVACY.md).
 2. **Developer account.** Go to the Chrome Web Store Developer Dashboard
    (https://chrome.google.com/webstore/devconsole), sign in with the Google account
    you want to publish under, and accept the developer agreement. Pay the **one-time
