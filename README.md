@@ -1,9 +1,9 @@
 # Tab Lock
 
-**Install from the Chrome Web Store:**
-https://chromewebstore.google.com/detail/mpggjibcbgbnmomcdknljmffhneojlpn
-(extension ID `mpggjibcbgbnmomcdknljmffhneojlpn`; works in Brave, which installs Chrome
-Web Store extensions).
+**Chrome Web Store:** submitted, **not yet published** (the first review was rejected and
+is under appeal). Store item ID `mpggjibcbgbnmomcdknljmffhneojlpn`; the listing will be at
+https://chromewebstore.google.com/detail/mpggjibcbgbnmomcdknljmffhneojlpn once published.
+Until then, install it from source (below).
 
 A small, free, open-source (MIT) browser extension for **Brave** (and other Chromium
 browsers) that locks the browser behind a PIN or passphrase:
@@ -65,7 +65,7 @@ Known limits. These are real, not just legal boilerplate:
 
 ## Install from source (developers)
 
-Prefer the Chrome Web Store link above. To run the code from this repository instead:
+Once Tab Lock is published, prefer the Chrome Web Store. To run the code from this repository:
 
 1. Download or clone this repository (`git clone https://github.com/jsplett7360/brave-tab-lock`).
 2. Open `brave://extensions`, turn on **Developer mode** (top right).
@@ -150,6 +150,7 @@ dependencies.
 node --test test/          # unit tests (Node 20+; uses only node:test)
 ./tools/package.sh         # zip the extension files for the Chrome Web Store (refuses a manifest with "key")
 ./tools/dev-build.sh       # dev-build/: a copy with the store's ID, for testing the installer locally
+./tools/pack-crx.sh        # signed .crx for Verified CRX Uploads (see store/VERIFIED-UPLOADS.md)
 python3 tools/make_icons.py  # regenerate icons/ (stdlib only)
 python3 tools/make_promo.py  # regenerate the store's 440×280 promo tile (stdlib only)
 ```

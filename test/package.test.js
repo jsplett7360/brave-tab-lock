@@ -58,3 +58,36 @@ test('dev-build.sh adds the store key to a copy only', darwin, () => {
     rmSync(d, { recursive: true, force: true });
   }
 });
+
+test('make-signing-key.sh refuses the repo, Desktop, Documents and cloud-synced folders (creates nothing)', darwin, () => {
+  const home = process.env.HOME;
+  for (const d of [join(root, 'tools/k'), join(home, 'Desktop/tablock-k'), join(home, 'Documents/tablock-k'),
+    join(home, 'Library/Mobile Documents/tablock-k'), join(home, 'Library/CloudStorage/tablock-k')]) {
+    const r = spawnSync('sh', [join(root, 'tools/make-signing-key.sh'), '--dir', d], { encoding: 'utf8', input: '' });
+    assert.equal(r.status, 1, d);
+    assert.match(r.stderr, /Refusing/);
+    assert.equal(existsSync(d), false, `${d} must not be created`);
+  }
+});
+
+test('pack-crx.sh refuses a manifest with "key" before asking for any passphrase', darwin, () => {
+  const d = copyRepo();
+  try {
+    const m = JSON.parse(readFileSync(join(d, 'manifest.json'), 'utf8'));
+    writeFileSync(join(d, 'manifest.json'), JSON.stringify({ ...m, key: 'abc' }));
+    const r = spawnSync('sh', [join(d, 'tools/pack-crx.sh'), '--key', '/nonexistent'], { encoding: 'utf8', input: '' });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /contains "key"/);
+  } finally {
+    rmSync(d, { recursive: true, force: true });
+  }
+});
+
+test('.gitignore blocks private keys but allows the two public keys', () => {
+  const r = (p) => spawnSync('git', ['-C', root, 'check-ignore', '-q', p]).status === 0;
+  assert.equal(r('signing-key.pem'), true);
+  assert.equal(r('tools/private.pem'), true);
+  assert.equal(r('tab-lock-0.1.1.crx'), true);
+  assert.equal(r('tools/store-public-key.pem'), false);
+  assert.equal(r('tools/signing-public-key.pem'), false);
+});

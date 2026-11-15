@@ -1,14 +1,18 @@
-# Switch Tab Lock from Unlisted to Public (you do this in the Developer Dashboard)
+# Getting Tab Lock published (you do this in the Developer Dashboard)
 
-Recommended order:
+Nothing is published yet: 0.1.0 was rejected and is under appeal (see `store/listing.md`).
 
-1. **Upload 0.1.1 first** (Package → *Upload new package* → `tab-lock-0.1.1.zip`). In
-   the same draft, on the **Store listing** tab, upload the small promo tile
-   `store/promo-small-440x280.png`. **Save draft → Submit for review**, keeping it
-   **Unlisted**.
-2. When 0.1.1 is approved, run the installer live test (`installer/LIVE-TEST.md`), if
-   you want the installer working before going public.
-3. **Go public:** **Distribution** tab → **Visibility: Public** → **Save draft** →
+1. **Wait for the appeal outcome.** If it's rejected again, tell the builder before
+   changing anything else (the next suspect is the repository name in the description).
+2. **Set up signed uploads first** (`store/VERIFIED-UPLOADS.md`), if you haven't: make
+   the key, back it up, pack once, then opt in.
+3. **Upload 0.1.1:** Package → *Upload new package* → `tab-lock-0.1.1.crx` from
+   `./tools/pack-crx.sh` (after opt-in, updates must be signed CRX files). Without
+   opt-in, the `.zip` from `./tools/package.sh`. On the **Store listing** tab, upload the
+   small promo tile `store/promo-small-440x280.png`. **Save draft → Submit for review.**
+   Keep it **Unlisted** if you want to run the installer live test
+   (`installer/LIVE-TEST.md`) before going public.
+4. **Go public:** **Distribution** tab → **Visibility: Public** → **Save draft** →
    **Submit for review**. Leave everything else as is (free, all regions).
 
 **Does switching visibility trigger a review?** Chrome's docs don't say. They say "All
@@ -19,4 +23,4 @@ The only change they explicitly say does *not* trigger review is a rollout-perce
 change ([update docs](https://developer.chrome.com/docs/webstore/update)). Expect it may
 go through review; the dashboard shows the status.
 
-After it's public: the store link in `README.md` stays the same. Update `STATE.md`.
+After it's published: update the README's store line and `STATE.md`.

@@ -26,7 +26,9 @@ Brave will show "Managed by your organization". That is expected.
 Chromium (and therefore Brave) only force-installs extensions from **outside** the Chrome
 Web Store on Macs that are MDM-managed, MCX-domain-joined or enrolled in Chrome Enterprise
 Core (same policy definition). A personal Mac isn't, so the installer always installs
-the **store** copy. It gets whatever version the store currently serves.
+the **store** copy. It gets whatever version the store currently serves, so it can't be
+used until a version is approved (as of 2026-11-15, none is: 0.1.0 was rejected and is
+under appeal).
 
 **Unlisted listing:** whether force-install works while the listing is Unlisted is
 **not verified yet**. The policy text only says "By default, the Chrome Web Store's

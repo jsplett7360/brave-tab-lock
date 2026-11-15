@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.1 — 2026-11-15
+## 0.1.1 — 2026-11-15 (not yet uploaded)
 - When the macOS installer's master PIN arrives in a profile that already had its own PIN,
   Tab Lock now shows a "!" badge and opens its setup page once, so you can enter the master
   PIN right away.
@@ -11,4 +11,5 @@
   from 0.1.0 still open).
 
 ## 0.1.0 — 2026-11-15
-- First release.
+- First version. Submitted to the Chrome Web Store and **rejected** ("Yellow Nickel");
+  never published. Appeal filed with a new store description (no code change).

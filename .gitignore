@@ -2,4 +2,10 @@
 .DS_Store
 node_modules/
 *.zip
+*.crx
 /dev-build/
+/tab-lock-signing/
+# Never commit private keys. Only these two PUBLIC keys are allowed:
+*.pem
+!/tools/store-public-key.pem
+!/tools/signing-public-key.pem

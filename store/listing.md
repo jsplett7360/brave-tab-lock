@@ -1,8 +1,21 @@
 # Chrome Web Store listing — Tab Lock
 
-Store item: https://chromewebstore.google.com/detail/mpggjibcbgbnmomcdknljmffhneojlpn
-(ID `mpggjibcbgbnmomcdknljmffhneojlpn`). 0.1.0 approved as **Unlisted**; switching to
-Public: see `store/GO-PUBLIC.md`.
+Store item ID `mpggjibcbgbnmomcdknljmffhneojlpn` (listing URL, once published:
+https://chromewebstore.google.com/detail/mpggjibcbgbnmomcdknljmffhneojlpn).
+
+## Status (2026-11-15)
+- **0.1.0 was rejected and has never been published** (not even Unlisted). Notification
+  "Yellow Nickel" (Spam and Placement in the Store); the policy references listed were
+  the Developer Terms, Program Policies and Branding Guidelines.
+- Cause: the user's assessment is that the 0.1.0 detailed description triggered it
+  (decorative dividers, ALL-CAPS headings, repetitive "no X, no Y" lists, "Built for
+  Brave" on the Chrome store). Google hasn't confirmed this. For reference, Google's
+  Yellow Nickel entry lists other triggers first: "You or your affiliates are submitting
+  multiple extensions that provide duplicate experiences or functionality", review
+  manipulation, disruptive notifications, and messages sent without consent
+  ([troubleshooting](https://developer.chrome.com/docs/webstore/troubleshooting/)).
+- The user submitted the plain description below and **appealed**. The outcome is pending.
+- 0.1.1 (`tab-lock-0.1.1.zip`) has **not** been uploaded.
 
 ## Name
 Tab Lock
@@ -13,45 +26,34 @@ Locks your browser behind a PIN and hides your open tabs. Everything stays on yo
 ## Category / language
 Category: Privacy & Security (pick the closest available in the dashboard). Language: English.
 
-## Detailed description
+## Detailed description (submitted 2026-11-15, replaces the rejected 0.1.0 text)
 
-Tab Lock locks your browser behind a PIN or passphrase and hides your open tabs until you
-unlock it. It is free, open source (MIT), and stores nothing off your device.
+Tab Lock locks your browser behind a PIN or passphrase and hides your open tabs until you unlock it. It works in Chrome and other Chromium-based browsers.
 
-WHAT IT DOES
-• Locks after a chosen number of minutes of inactivity (default 5), whenever the browser
-  starts, or when you press Control+Shift+L (Mac) / Ctrl+Shift+L or click its button.
-• While locked, your open tabs are encrypted, closed and replaced by a lock page. A
-  correct PIN reopens them, with pinned tabs and tab groups.
-• While locked, new tabs and windows are closed as soon as they open.
-• History, Settings, Passwords, Extensions and Downloads ask for your PIN even while
-  unlocked (each can be switched off).
-• Wrong PINs: after 5 attempts, each new try has to wait longer. Optionally, saved tabs
-  can be erased after many wrong attempts.
-• Works in private windows if you allow it ("Allow in Private"). Private tabs are only
-  ever kept in memory.
+Tab Lock is open source (MIT license) and works entirely on your device. It makes no network requests, has no accounts, and collects no data. The source code is available at github.com/jsplett7360/brave-tab-lock.
 
-PRIVACY
-Tab Lock makes no network requests at all: no analytics, no accounts, no servers. Your
-PIN is never stored. Only a salted PBKDF2 hash is kept, and your tabs are encrypted with
-AES-GCM on your device. The full source code is public.
+Features
 
-PLEASE READ — WHAT IT CAN'T DO
-Tab Lock is a convenience layer. Your computer's lock screen and disk encryption
-(FileVault on Mac) are the real protection.
-• A 6-digit PIN can be guessed offline by someone who can copy your browser profile's
-  files. Use a passphrase.
-• The browser itself may already keep tab titles and addresses in its history and session
-  files.
-• The address bar may still suggest history (turn off "Show autocomplete suggestions in
-  address bar" in Brave's Appearance settings).
-• Someone can use another browser profile or another browser.
-• Locking closes your tabs, so text typed into forms but not submitted is lost.
-• Without the optional macOS installer, the extension can be removed from the browser's
-  menu.
+- Locks automatically after a period of inactivity you choose (default 5 minutes), when your screen locks, and when the browser starts.
+- Lock instantly with a keyboard shortcut (Control+Shift+L on Mac, Ctrl+Shift+L elsewhere) or the toolbar button.
+- While locked, your open tabs are encrypted, closed and replaced by a lock screen. Unlocking restores your windows, tabs, pinned tabs and tab groups.
+- History, Settings, Passwords, Extensions and Downloads pages can require your PIN even while unlocked. Each can be turned on or off.
+- After several wrong attempts, each new attempt must wait longer.
+- Works in private windows if you allow it. Private-window tabs are kept in memory only and never written to disk.
 
-Optional for Mac: an installer in the source repository can force-install Tab Lock via
-browser policy and set one master PIN for every Brave profile.
+How your data is handled
+
+Your PIN is never stored. Tab Lock keeps only a salted hash of it and encrypts your saved tabs on your device using the browser's built-in Web Crypto API. The extension does not access the content of the websites you visit.
+
+Permissions
+
+- Storage: settings and the encrypted tab list, on your device.
+- Tabs and tab groups: save, close and restore your tabs, and detect protected pages.
+- Idle and alarms: lock after inactivity.
+
+Good to know
+
+Tab Lock adds a layer of privacy when your computer is already unlocked. It does not replace your computer's lock screen or disk encryption. A passphrase is stronger than a short PIN. Locking closes tabs, so unsaved form input is lost. Full details are in the project's README.
 
 ## Single purpose (Privacy practices tab)
 Lock the browser behind a PIN: hide the user's open tabs while locked and require the PIN
