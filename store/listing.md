@@ -1,4 +1,8 @@
-# Chrome Web Store listing — Tab Lock (draft, not submitted)
+# Chrome Web Store listing — Tab Lock
+
+Store item: https://chromewebstore.google.com/detail/mpggjibcbgbnmomcdknljmffhneojlpn
+(ID `mpggjibcbgbnmomcdknljmffhneojlpn`). 0.1.0 approved as **Unlisted**; switching to
+Public: see `store/GO-PUBLIC.md`.
 
 ## Name
 Tab Lock
@@ -89,5 +93,8 @@ https://github.com/jsplett7360/brave-tab-lock/blob/main/PRIVACY.md
 - Screenshots (1280×800): `store/screenshots/1-locked.png`, `2-protected-page.png`,
   `3-settings.png`, `4-onboarding.png`, `5-locked-dark.png`. These are real captures
   from Brave 1.99.57.
-- Small promo tile 440×280 and marquee 1400×560: optional, not made. Without the small
-  tile, the listing ranks after listings that have one.
+- Small promo tile 440×280: `store/promo-small-440x280.png`. It's an opaque 24-bit PNG
+  (no alpha) showing the lock and the name only, following the guideline "Avoid text".
+  Regenerate with `python3 tools/make_promo.py`. Listings without a small tile "will be
+  shown after" those that have one.
+- Marquee 1400×560: optional, not made (only needed to be featured).

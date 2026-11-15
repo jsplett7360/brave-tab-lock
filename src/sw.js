@@ -18,6 +18,7 @@ chrome.idle.onStateChanged.addListener(after(c.onIdleState));
 chrome.alarms.onAlarm.addListener(after(c.onAlarm));
 chrome.action.onClicked.addListener(after(c.onActionClicked));
 chrome.commands.onCommand.addListener(after(c.onCommand));
+chrome.storage.onChanged.addListener(after(c.onStorageChanged)); // master PIN policy arriving
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   ready
     .then(() => c.onMessage(msg, sender))

@@ -1,5 +1,10 @@
 # Tab Lock
 
+**Install from the Chrome Web Store:**
+https://chromewebstore.google.com/detail/mpggjibcbgbnmomcdknljmffhneojlpn
+(extension ID `mpggjibcbgbnmomcdknljmffhneojlpn`; works in Brave, which installs Chrome
+Web Store extensions).
+
 A small, free, open-source (MIT) browser extension for **Brave** (and other Chromium
 browsers) that locks the browser behind a PIN or passphrase:
 
@@ -58,7 +63,9 @@ Known limits. These are real, not just legal boilerplate:
 10. After a browser start, tabs Brave restores can be visible for about 1–2 seconds
     before Tab Lock saves and closes them.
 
-## Install (developer / before the store listing)
+## Install from source (developers)
+
+Prefer the Chrome Web Store link above. To run the code from this repository instead:
 
 1. Download or clone this repository (`git clone https://github.com/jsplett7360/brave-tab-lock`).
 2. Open `brave://extensions`, turn on **Developer mode** (top right).
@@ -141,18 +148,29 @@ dependencies.
 
 ```sh
 node --test test/          # unit tests (Node 20+; uses only node:test)
-./tools/package.sh         # zip the extension files for the Chrome Web Store
+./tools/package.sh         # zip the extension files for the Chrome Web Store (refuses a manifest with "key")
+./tools/dev-build.sh       # dev-build/: a copy with the store's ID, for testing the installer locally
 python3 tools/make_icons.py  # regenerate icons/ (stdlib only)
+python3 tools/make_promo.py  # regenerate the store's 440×280 promo tile (stdlib only)
 ```
+
+Releasing a new version: follow [RELEASE.md](RELEASE.md).
 
 ### Keeping the extension ID stable
 
 The installer's policy needs the extension's ID. Unpacked builds get an ID derived from
-their folder path. The Web Store assigns its own. To make a local build use the store's
-ID: upload a draft to the Developer Dashboard (no need to publish), open the
-**Package** tab, click **View public key**, copy the key on one line, and add it as
-`"key"` in `manifest.json` for local testing only. The store copy doesn't need it.
-([Chrome docs: manifest key](https://developer.chrome.com/docs/extensions/reference/manifest/key))
+their folder path; the store's ID is `mpggjibcbgbnmomcdknljmffhneojlpn`. The store's
+public key (not a secret: it ships inside every installed copy) is in
+`tools/store-public-key.pem`, copied from the dashboard's **Package → View public key**.
+`./tools/dev-build.sh` writes `dev-build/`, a copy whose manifest has that key as
+`"key"`, so **Load unpacked** on `dev-build/` gets the store ID
+([Chrome docs: manifest key](https://developer.chrome.com/docs/extensions/reference/manifest/key)).
+
+- The repository's own `manifest.json` never contains `"key"`, and `tools/package.sh`
+  refuses to package one that does. Chrome's docs don't say how the store treats an
+  upload with `"key"`; developers report that a first upload with it is rejected.
+- Don't load `dev-build/` in a profile that already has Tab Lock from the store or the
+  installer: two copies with the same ID conflict.
 
 ## Platform facts this relies on (checked 2026-11-15, Brave 1.99.57 on macOS)
 

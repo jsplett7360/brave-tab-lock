@@ -214,6 +214,53 @@ export async function open(sealed, privateKey) {
   }
 }
 
+/**
+ * Multi-recipient seal (record version 2): one AES-GCM-256 data key, wrapped separately
+ * for each recipient's RSA-OAEP public key. `recipients` = [{ kid, pub }].
+ */
+export async function sealFor(value, recipients) {
+  if (!Array.isArray(recipients) || recipients.length === 0) throw new TypeError('no recipients');
+  const dek = await subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt']);
+  const iv = randomBytes(IV_BYTES);
+  const ct = new Uint8Array(await subtle.encrypt({ name: 'AES-GCM', iv }, dek, enc.encode(JSON.stringify(value))));
+  const raw = new Uint8Array(await subtle.exportKey('raw', dek));
+  try {
+    const wks = [];
+    for (const r of recipients) {
+      const pub = await subtle.importKey('spki', fromB64(r.pub), RSA, false, ['encrypt']);
+      wks.push({ kid: r.kid, wk: toB64(new Uint8Array(await subtle.encrypt({ name: 'RSA-OAEP' }, pub, raw))) });
+    }
+    return { v: 2, alg: 'RSA-OAEP-3072+AES-GCM-256', wks, iv: toB64(iv), ct: toB64(ct) };
+  } finally {
+    raw.fill(0);
+  }
+}
+
+/** Key ids a sealed record can be opened with (handles version 1 and 2). */
+export function sealedKids(sealed) {
+  return Array.isArray(sealed?.wks) ? sealed.wks.map((w) => w.kid) : [sealed?.kid];
+}
+
+/** Open a version-1 or version-2 sealed record with any matching key in `keysByKid`. */
+export async function openWithAny(sealed, keysByKid) {
+  if (!Array.isArray(sealed?.wks)) {
+    const k = keysByKid[sealed?.kid];
+    if (!k) throw new Error('no key for this record');
+    return open(sealed, k);
+  }
+  let lastErr = new Error('no key for this record');
+  for (const { kid, wk } of sealed.wks) {
+    const k = keysByKid[kid];
+    if (!k) continue;
+    try {
+      return await open({ wk, iv: sealed.iv, ct: sealed.ct }, k);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr;
+}
+
 /** Short, non-secret fingerprint of a PIN record (used for `boundTo`). */
 export function recordId(pinRec) {
   return pinRec ? `${pinRec.salt}:${pinRec.hash}` : null;

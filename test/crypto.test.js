@@ -111,3 +111,23 @@ test('base64 helpers round-trip large buffers', () => {
   const u = new Uint8Array(200_000).map((_, i) => (i * 7919) & 255);
   assert.deepEqual(C.fromB64(C.toB64(u)), u);
 });
+
+test('sealFor: any recipient opens it; version-1 records still open; wrong keys fail', async () => {
+  const a = await C.createEphemeralKeyPair();
+  const b = await C.createEphemeralKeyPair();
+  const c = await C.createEphemeralKeyPair();
+  const ka = await C.importEphemeralPrivate(a.priv);
+  const kb = await C.importEphemeralPrivate(b.priv);
+  const kc = await C.importEphemeralPrivate(c.priv);
+  const sealed = await C.sealFor({ tabs: 3 }, [{ kid: 'A', pub: a.pub }, { kid: 'B', pub: b.pub }]);
+  assert.equal(sealed.v, 2);
+  assert.deepEqual(C.sealedKids(sealed), ['A', 'B']);
+  assert.deepEqual(await C.openWithAny(sealed, { A: ka }), { tabs: 3 });
+  assert.deepEqual(await C.openWithAny(sealed, { B: kb }), { tabs: 3 });
+  await assert.rejects(C.openWithAny(sealed, { C: kc }));
+  await assert.rejects(C.openWithAny(sealed, { A: kc }), 'right kid, wrong key');
+  const v1 = { ...(await C.seal('old', a.pub)), kid: 'A' };
+  assert.deepEqual(C.sealedKids(v1), ['A']);
+  assert.equal(await C.openWithAny(v1, { A: ka }), 'old');
+  await assert.rejects(C.sealFor('x', []));
+});

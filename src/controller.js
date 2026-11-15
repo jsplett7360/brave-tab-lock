@@ -67,17 +67,35 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
   const isLockedPhase = (p) => p === 'locked' || p === 'locking';
 
   // ---- key handling ------------------------------------------------------------------
-  /** Public key for sealing at lock time (PIN not known). */
-  async function sealingKey() {
+  /** Managed master PIN present, but this profile hasn't been opened with it yet. */
+  async function managedSetupPending() {
+    const m = await managedRecord();
+    if (!m) return false;
     const keyRec = await getL('keyRec');
-    if (keyRec) return { pub: keyRec.pub, kid: keyRec.kid };
-    // Managed mode before this profile's one-time setup: memory-only key pair.
+    return !keyRec || keyRec.boundTo !== C.recordId(m);
+  }
+
+  async function ephemeralRecipient() {
     let eph = await getS('ephemeral');
     if (!eph) {
       eph = await C.createEphemeralKeyPair();
       await session.set({ ephemeral: eph });
     }
     return { pub: eph.pub, kid: 'session' };
+  }
+
+  /**
+   * Public keys to seal to at lock time (the PIN isn't known then).
+   * Normally: this profile's key. While a newly installed master PIN hasn't been entered
+   * in this profile yet, ALSO a memory-only key, so that unlocking with the master PIN in
+   * this browser session reopens the tabs without needing the old per-profile PIN.
+   */
+  async function sealingRecipients() {
+    const keyRec = await getL('keyRec');
+    const out = [];
+    if (keyRec) out.push({ pub: keyRec.pub, kid: keyRec.kid });
+    if (!keyRec || (await managedSetupPending())) out.push(await ephemeralRecipient());
+    return out;
   }
 
   /** After a verified secret: ensure a key record bound to the current PIN record. */
@@ -170,8 +188,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
 
   async function appendChunk(area, key, windows) {
     if (!windows.length) return;
-    const { pub, kid } = await sealingKey();
-    const chunk = { ...(await C.seal(windows, pub)), kid, at: now(), tabs: tabCount(windows) };
+    const chunk = { ...(await C.sealFor(windows, await sealingRecipients())), at: now(), tabs: tabCount(windows) };
     const store = area === 'local' ? local : session;
     const list = ((await store.get(key))[key] || []).slice(-(MAX_CHUNKS - 1));
     list.push(chunk);
@@ -246,10 +263,9 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
       const list = ((await store.get(key))[key]) || [];
       const keep = [];
       for (const chunk of list) {
-        const k = keys[chunk.kid];
-        if (!k) { keep.push(chunk); continue; }
+        if (!C.sealedKids(chunk).some((kid) => keys[kid])) { keep.push(chunk); continue; }
         try {
-          const windows = await C.open(chunk, k);
+          const windows = await C.openWithAny(chunk, keys);
           const cats = new Set();
           for (const w of windows) for (const t of w.tabs) { const c = classify(t.url); if (c) cats.add(c); }
           // The user just proved the PIN: don't bounce restored protected pages.
@@ -285,6 +301,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
   }
 
   async function finishUnlock(result) {
+    await refreshBadge(); // e.g. master-PIN setup just completed by this unlock
     const pending = await pendingInfo();
     const problem = result.errors.length || result.failedTabs.length || pending.oldChunks || pending.lostChunks;
     await local.set({ lock: { phase: 'unlocked', since: now() } });
@@ -364,7 +381,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
       if (!chk.ok) return chk;
       const cur = (await getL('keyRec'))?.kid;
       const eph = await getS('ephemeral');
-      const usable = (c) => c.kid === cur || (c.kid === 'session' && eph);
+      const usable = (c) => C.sealedKids(c).some((kid) => kid === cur || (kid === 'session' && eph));
       const vault = ((await getL('vault')) || []).filter(usable);
       const pvault = ((await getS('pvault')) || []).filter(usable);
       await (vault.length ? local.set({ vault }) : local.remove('vault'));
@@ -376,7 +393,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
 
   async function pruneOldKeys() {
     const oldKeys = (await getL('oldKeys')) || {};
-    const used = new Set([...(((await getL('vault')) || []).map((c) => c.kid)), ...(((await getS('pvault')) || []).map((c) => c.kid))]);
+    const used = new Set([...((await getL('vault')) || []), ...((await getS('pvault')) || [])].flatMap((c) => C.sealedKids(c)));
     for (const kid of Object.keys(oldKeys)) if (!used.has(kid)) delete oldKeys[kid];
     await (Object.keys(oldKeys).length ? local.set({ oldKeys }) : local.remove('oldKeys'));
   }
@@ -391,9 +408,9 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
     for (const c of [...vault, ...pvault]) {
       savedChunks++;
       savedTabs += c.tabs || 0;
-      if (c.kid === cur) continue;
-      if (c.kid === 'session') { if (!eph) lostChunks++; continue; }
-      if (oldKeys[c.kid]) oldChunks++;
+      const kids = C.sealedKids(c);
+      if (kids.includes(cur) || (eph && kids.includes('session'))) continue;
+      if (kids.some((kid) => oldKeys[kid])) oldChunks++;
       else lostChunks++;
     }
     return { savedChunks, savedTabs, oldChunks, lostChunks };
@@ -522,7 +539,26 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
         const w = await api.windows.getLastFocused();
         if (!w?.focused && !(await getS('unfocusedSince'))) await session.set({ unfocusedSince: now() });
       } catch { /* no windows */ }
+      await promptManagedSetup();
     }
+  }
+
+  /**
+   * A master PIN just arrived (or is still not entered in this profile): open the setup
+   * page once per browser session so the user enters it right away. Until then, locks
+   * also seal to a memory-only key (see sealingRecipients).
+   */
+  async function promptManagedSetup() {
+    if ((await phase()) !== 'unlocked' || !(await managedSetupPending())) return;
+    if (await getS('setupPrompted')) return;
+    await session.set({ setupPrompted: now() });
+    await api.tabs.create({ url: api.runtime.getURL(ONBOARDING_PAGE) }).catch(() => {});
+  }
+
+  async function onStorageChanged(changes, area) {
+    if (area !== 'managed') return;
+    await refreshBadge();
+    await promptManagedSetup();
   }
 
   async function onStartup() {
@@ -542,6 +578,8 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
           if ((await phase()) === 'locked') await sweepWhileLocked(await ensureLockPage());
         }).catch(() => {}), ms);
       }
+    } else {
+      await promptManagedSetup();
     }
   }
 
@@ -551,9 +589,10 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
 
   async function refreshBadge() {
     const { rec } = await pinRecord();
+    const needsSetup = !rec || (await managedSetupPending());
     try {
-      await api.action.setBadgeText({ text: rec ? '' : '!' });
-      if (!rec) await api.action.setBadgeBackgroundColor({ color: '#b3261e' });
+      await api.action.setBadgeText({ text: needsSetup ? '!' : '' });
+      if (needsSetup) await api.action.setBadgeBackgroundColor({ color: '#b3261e' });
     } catch { /* action API optional in tests */ }
   }
 
@@ -679,7 +718,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
 
   return {
     init, onStartup, onInstalled, onTabCreated, onTabUpdated, onTabRemoved, onFocusChanged,
-    onIdleState, onAlarm, onActionClicked, onCommand, onMessage, lock, unlock, status,
+    onIdleState, onAlarm, onActionClicked, onCommand, onMessage, onStorageChanged, lock, unlock, status,
     // exposed for tests
     _internal: { ensureLockPage, pendingInfo, phase },
   };

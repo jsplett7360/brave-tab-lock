@@ -309,7 +309,7 @@ test('managed, before per-profile setup: lock uses a memory-only key (lost on re
   await c.init();
   f.openWindow([{ url: 'https://a.example/' }]);
   await c.lock();
-  assert.equal(f.api.storage.local._dump().vault[0].kid, 'session');
+  assert.deepEqual(C.sealedKids(f.api.storage.local._dump().vault[0]), ['session']);
   // same session: unlock works
   assert.equal((await msg({ type: 'unlock', secret: 'master passphrase' })).restoredWindows, 1);
   // new lock (now with a key record) → fine; simulate an old session chunk lost on restart:
@@ -367,5 +367,73 @@ test('locked tick (safety net) closes stragglers outside the startup window', as
   await c.lock();
   f.openWindow([{ url: 'https://sneaky.example/' }]); // no event delivered
   await c.onAlarm({ name: 'tablock-tick' });
+  assert.deepEqual(urls(f), [LOCK]);
+});
+
+async function withMaster(f, secret) {
+  const r = await C.hashSecret(secret, 'passphrase');
+  f.setManaged({ masterPin: { kind: 'passphrase', iterations: r.iterations, salt: r.salt, hash: r.hash } });
+}
+
+test('master PIN arrives on a profile with its own PIN: setup page opens once, badge shows "!"', async () => {
+  const { c, f } = await configured();
+  f.openWindow([{ url: 'https://a.example/' }]);
+  assert.equal(f.api.action.badge, '');
+  await withMaster(f, 'master passphrase');
+  await c.onStorageChanged({ masterPin: {} }, 'managed');
+  const onboarding = (u) => u.endsWith('src/pages/onboarding.html');
+  assert.equal(f.allTabs().filter((t) => onboarding(t.url)).length, 1);
+  assert.equal(f.api.action.badge, '!');
+  await c.onStorageChanged({ masterPin: {} }, 'managed');
+  await c.init();
+  assert.equal(f.allTabs().filter((t) => onboarding(t.url)).length, 1, 'only once per browser session');
+  await c.onStorageChanged({}, 'local');
+  assert.equal(f.allTabs().filter((t) => onboarding(t.url)).length, 1);
+});
+
+test('risk (c): lock between policy arrival and setup → master PIN reopens tabs, no old PIN needed', async () => {
+  const { c, f, msg } = await configured();
+  f.openWindow([{ url: 'https://gap.example/' }]);
+  await withMaster(f, 'master passphrase');
+  await c.onIdleState('idle'); // auto-lock before the user entered the master PIN anywhere
+  const chunk = f.api.storage.local._dump().vault[0];
+  assert.equal(chunk.v, 2);
+  assert.equal(C.sealedKids(chunk).length, 2, 'sealed to the old profile key AND the session key');
+  assert.equal((await msg({ type: 'unlock', secret: PIN })).error, 'wrong', 'old per-profile PIN no longer unlocks');
+  const r = await msg({ type: 'unlock', secret: 'master passphrase' });
+  assert.equal(r.ok, true);
+  assert.equal(r.oldChunks, 0);
+  assert.equal(r.lostChunks, 0);
+  assert.deepEqual(urls(f).filter((u) => !u.includes('onboarding')), ['https://gap.example/']);
+  assert.equal((await c.status()).managedSetupDone, true);
+  assert.equal(f.api.action.badge, '');
+  // after setup, new locks are sealed to the new key only
+  await c.lock();
+  assert.deepEqual(C.sealedKids(f.api.storage.local._dump().vault[0]).length, 1);
+  assert.equal((await msg({ type: 'unlock', secret: 'master passphrase' })).ok, true);
+});
+
+test('risk (c) across a browser restart: tabs still open with the previous per-profile PIN', async () => {
+  const { c, f, msg, clock } = await configured();
+  f.openWindow([{ url: 'https://gap.example/' }]);
+  await withMaster(f, 'master passphrase');
+  await c.lock();
+  f.api.storage.session._replace({}); // browser restart: the memory-only key is gone
+  const c2 = createController(f.api, clock);
+  const r = await c2.onMessage({ type: 'unlock', secret: 'master passphrase' }, f.sender());
+  assert.equal(r.ok, true);
+  assert.equal(r.oldChunks, 1, 'needs the previous PIN — never silently lost');
+  assert.equal(r.lostChunks, 0);
+  const rec = await c2.onMessage({ type: 'recoverOld', secret: PIN }, f.sender());
+  assert.equal(rec.restoredWindows, 1);
+  assert.ok(urls(f).includes('https://gap.example/'));
+});
+
+test('setup prompt never opens while locked', async () => {
+  const { c, f } = await configured();
+  f.openWindow([{ url: 'https://a.example/' }]);
+  await c.lock();
+  await withMaster(f, 'master passphrase');
+  await c.onStorageChanged({ masterPin: {} }, 'managed');
   assert.deepEqual(urls(f), [LOCK]);
 });
