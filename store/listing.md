@@ -15,7 +15,8 @@ https://chromewebstore.google.com/detail/mpggjibcbgbnmomcdknljmffhneojlpn).
   manipulation, disruptive notifications, and messages sent without consent
   ([troubleshooting](https://developer.chrome.com/docs/webstore/troubleshooting/)).
 - The user submitted the plain description below and **appealed**. The outcome is pending.
-- 0.1.1 (`tab-lock-0.1.1.zip`) has **not** been uploaded.
+- 0.1.1 has **not** been uploaded. **Verified CRX Uploads is on** (opted in 2026-11-15),
+  so it must be uploaded as `tab-lock-0.1.1.crx` from `./tools/pack-crx.sh`, not the zip.
 
 ## Name
 Tab Lock

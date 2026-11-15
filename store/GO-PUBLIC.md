@@ -4,8 +4,7 @@ Nothing is published yet: 0.1.0 was rejected and is under appeal (see `store/lis
 
 1. **Wait for the appeal outcome.** If it's rejected again, tell the builder before
    changing anything else (the next suspect is the repository name in the description).
-2. **Set up signed uploads first** (`store/VERIFIED-UPLOADS.md`), if you haven't: make
-   the key, back it up, pack once, then opt in.
+2. ✅ Signed uploads are set up (opted in 2026-11-15, `store/VERIFIED-UPLOADS.md`).
 3. **Upload 0.1.1:** Package → *Upload new package* → `tab-lock-0.1.1.crx` from
    `./tools/pack-crx.sh` (after opt-in, updates must be signed CRX files). Without
    opt-in, the `.zip` from `./tools/package.sh`. On the **Store listing** tab, upload the

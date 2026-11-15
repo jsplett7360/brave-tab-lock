@@ -21,5 +21,7 @@ appealed; the outcome is pending. See `store/listing.md` → Status. Store item 
 7. ✅ **Privacy practices tab** (all answers in `store/listing.md`).
 8. ✅ **Distribution:** Unlisted, free (chosen; nothing is published yet).
 9. ❌ **Review: 0.1.0 rejected** → ✅ new description submitted + appeal filed → ⏳ waiting.
-10. Next: set up signed uploads (`store/VERIFIED-UPLOADS.md`), then after the appeal
-    upload 0.1.1 (see `store/GO-PUBLIC.md`).
+10. ✅ **Verified CRX Uploads: opted in (2026-11-15).** Signing key fingerprint
+    `01ab79107c663da8` (public half: `tools/signing-public-key.pem`). From now on, upload
+    only `.crx` files from `./tools/pack-crx.sh`.
+11. Next: after the appeal, upload `tab-lock-0.1.1.crx` (see `store/GO-PUBLIC.md`).
