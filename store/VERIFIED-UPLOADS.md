@@ -32,8 +32,9 @@ passphrase. Chrome's docs describe it as "an additional layer of security to upd
    cd /Users/joshsplett/Desktop/Joshua/Project/Life/brave-tab-lock
    ./tools/make-signing-key.sh
    ```
-   Choose a long, unique passphrase at the hidden prompt and **save it in Proton Pass
-   immediately** (a new login/note item, e.g. "Tab Lock signing key passphrase").
+   Choose a long, unique passphrase. You type it **three times** at hidden prompts: twice
+   to set it, once more to export the public key. You never type the private key itself.
+   **Save the passphrase in Proton Pass immediately** (a new login/note item, e.g. "Tab Lock signing key passphrase").
 2. **Back up the encrypted key file offline.** It's
    `~/.config/tab-lock-signing/signing-key.pem`. Attach it to that Proton Pass item, and/or
    copy it to a USB drive kept somewhere safe. It's useless without the passphrase, but

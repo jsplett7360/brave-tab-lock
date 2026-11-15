@@ -56,9 +56,9 @@ chmod 700 "$ABS"
 cat <<MSG
 Creating an RSA-2048 signing key at:
   $KEY
-openssl will ask for a passphrase twice (typing is hidden). Use a long, unique passphrase
-and save it in Proton Pass right away. Without BOTH the key file and the passphrase you
-can't publish updates.
+You'll type the same passphrase THREE times (typing is hidden): twice to set it, then
+once more to export the public key. Use a long, unique passphrase and save it in Proton
+Pass right away. Without BOTH the key file and the passphrase you can't publish updates.
 
 MSG
 /usr/bin/openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -aes-256-cbc -out "$KEY"
