@@ -18,7 +18,9 @@ Store item ID `mpggjibcbgbnmomcdknljmffhneojlpn` (not yet published; see `store/
 5. **Upload (you):** Developer Dashboard → Tab Lock → **Package** → *Upload new package*
    → the `.crx` (or `.zip` before opt-in). Update the listing text/images if needed.
    **Submit for review.**
-6. **After approval:** existing installs update automatically. Then tag the commit the
+6. **After approval:** existing installs update automatically. While a browser is
+   locked (or tabs are hidden or saved), the update waits and installs right after the
+   user unlocks (0.1.3+). Then tag the commit the
    package was built from:
    ```sh
    git tag -a v<version> -m "Tab Lock <version>" && git push origin v<version>

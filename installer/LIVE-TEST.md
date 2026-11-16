@@ -1,7 +1,7 @@
 # Installer live test (you run it; the builder records your results)
 
 **Blocked until a Tab Lock version is approved on the store** (0.1.0 was rejected and is
-under appeal; 0.1.2 isn't uploaded yet). Do this **after 0.1.2 is approved**. The installer always installs
+under appeal; 0.1.3 isn't uploaded yet). Do this **after 0.1.3 is approved**. The installer always installs
 the store's current version; 0.1.1 and later have the master-PIN setup prompt. Report each
 result in your own words; nothing here asks for your PIN.
 
@@ -11,7 +11,7 @@ result in your own words; nothing here asks for your PIN.
 2. Have (or create) **two Brave profiles**, A and B, for the check below.
 3. In Terminal:
    ```sh
-   cd /Users/joshsplett/Desktop/Joshua/Project/Life/brave-tab-lock
+   cd /Users/joshsplett/Desktop/Joshua/Projects/Project/Life/brave-tab-lock
    ./installer/install.sh --extension-id mpggjibcbgbnmomcdknljmffhneojlpn --install
    ```
    Type your master **passphrase** at the hidden prompt, twice.

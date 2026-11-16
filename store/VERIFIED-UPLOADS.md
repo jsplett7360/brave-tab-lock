@@ -29,7 +29,7 @@ passphrase. Chrome's docs describe it as "an additional layer of security to upd
 
 1. **Make the key** in your own Terminal:
    ```sh
-   cd /Users/joshsplett/Desktop/Joshua/Project/Life/brave-tab-lock
+   cd /Users/joshsplett/Desktop/Joshua/Projects/Project/Life/brave-tab-lock
    ./tools/make-signing-key.sh
    ```
    Choose a long, unique passphrase. You type it **three times** at hidden prompts: twice

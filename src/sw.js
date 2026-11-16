@@ -10,6 +10,7 @@ const after = (fn) => (...args) => { ready.then(() => fn(...args)).catch((e) => 
 
 chrome.runtime.onStartup.addListener(after(c.onStartup));
 chrome.runtime.onInstalled.addListener(after(c.onInstalled));
+chrome.runtime.onUpdateAvailable.addListener(after(c.onUpdateAvailable)); // installs once unlocked
 chrome.tabs.onCreated.addListener(after(c.onTabCreated));
 chrome.tabs.onUpdated.addListener(after(c.onTabUpdated));
 chrome.tabs.onRemoved.addListener(after(c.onTabRemoved));

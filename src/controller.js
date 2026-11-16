@@ -3,7 +3,8 @@
 // killed after ~30 s idle, so nothing important may live in a variable).
 //
 // chrome.storage.local (disk):   pinRec, keyRec, oldKeys, recRec (recovery code record),
-//                                settings, backoff, lock, notice,
+//                                settings, backoff, lock, notice, updatePending,
+//                                applyingUpdate,
 //                                vault (Lockdown mode: sealed chunks, NORMAL windows only),
 //                                hidden (default mode: sealed {token: {url,title}} chunks)
 // chrome.storage.session (RAM):  pvault (sealed private-window chunks), ephemeral,
@@ -38,6 +39,8 @@ const MAX_CHUNKS = 64;
 const MAX_HIDDEN_CHUNKS = 256;
 export const HIDE_SETTLE_MS = 1000;  // then retry tabs a "Leave site?" prompt kept open
 export const REVEAL_WAIT_MS = 2000;  // how long to wait for Back to land before navigating
+export const APPLY_UPDATE_GRACE_MS = 2 * 60_000; // our own update reload is not a browser start
+export const APPLY_UPDATE_DELAY_MS = 1500;       // let the unlock reply reach the page first
 
 const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -364,7 +367,10 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
     const map = (await getS('tabTokens')) || {};
     for (const p of plan) map[p.id] = p.token;
     await session.set({ tabTokens: map });
-    for (const p of plan) await api.tabs.update(p.id, { url: H.hideUrl(lockUrl, p.token) }).catch(() => {});
+    // autoDiscardable:false keeps a Tab Lock page alive in every hidden tab. While one is
+    // open, Brave won't install a Tab Lock update (it waits until the extension is idle),
+    // and an update would otherwise close the hidden tabs.
+    for (const p of plan) await api.tabs.update(p.id, { url: H.hideUrl(lockUrl, p.token), autoDiscardable: false }).catch(() => {});
     await settleHidden(plan);
     return plan.length;
   }
@@ -386,7 +392,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
     try {
       const d = await api.tabs.discard(tabId);
       const id = Number.isInteger(d?.id) ? d.id : tabId;
-      await api.tabs.update(id, { url: H.hideUrl(lockUrl, token) });
+      await api.tabs.update(id, { url: H.hideUrl(lockUrl, token), autoDiscardable: false });
       if (id !== tabId) {
         const map = (await getS('tabTokens')) || {};
         delete map[tabId];
@@ -404,7 +410,13 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
     const map = (await getS('tabTokens')) || {};
     const ids = new Set(all.map((t) => t.id));
     for (const id of Object.keys(map)) if (!ids.has(Number(id))) delete map[id];
-    for (const t of all) { const tok = tokenOf(tabUrl(t)); if (tok) map[t.id] = tok; }
+    for (const t of all) {
+      const tok = tokenOf(tabUrl(t));
+      if (!tok) continue;
+      map[t.id] = tok;
+      // tabs hidden by 0.1.2 (or restored by Brave) don't carry the no-discard flag yet
+      if (t.autoDiscardable !== false) await api.tabs.update(t.id, { autoDiscardable: false }).catch(() => {});
+    }
     await session.set({ tabTokens: map });
     return map;
   }
@@ -469,7 +481,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
       if (t.incognito) {
         if (!isOwnUrl(url) && inLockScope(ls, url)) toClose.push(t);
       } else if (map[t.id]) {
-        await api.tabs.update(t.id, { url: H.hideUrl(lockUrl, map[t.id]) }).catch(() => {});
+        await api.tabs.update(t.id, { url: H.hideUrl(lockUrl, map[t.id]), autoDiscardable: false }).catch(() => {});
       } else if (sites) {
         if (inLockScope(ls, url)) toHide.push(t);
       } else if (isOwnUrl(url) || (inStartup && worthSaving(url))) {
@@ -579,6 +591,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
   async function revealTab(tabId, token, entry) {
     const target = restorableUrl(entry.url) || 'chrome://newtab/';
     const here = H.hideUrl(lockUrl, token);
+    await api.tabs.update(tabId, { autoDiscardable: true }).catch(() => {}); // Brave's default again
     let backed = false;
     try { await api.tabs.goBack(tabId); backed = true; } catch { /* no usable history entry */ }
     if (backed) {
@@ -630,6 +643,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
     if (result.errors.length) await local.set({ notice: 'restore-failed' });
     if (result.failedTabs.length) await session.set({ failedTabs: result.failedTabs });
     else await session.remove('failedTabs');
+    if (await getL('updatePending')) schedule(() => serial(maybeApplyUpdate).catch(() => {}), APPLY_UPDATE_DELAY_MS);
     if (mode === 'hide') {
       await tidyPlainLockPages(problem);
     } else {
@@ -914,7 +928,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
     }
     if (isLockUrl(url)) return; // plain lock page or a PIN prompt
     if (!tab.incognito && map[tab.id]) {
-      await api.tabs.update(tab.id, { url: H.hideUrl(lockUrl, map[tab.id]) }).catch(() => {});
+      await api.tabs.update(tab.id, { url: H.hideUrl(lockUrl, map[tab.id]), autoDiscardable: false }).catch(() => {});
       return;
     }
     if (isSitesLock(ls)) {
@@ -989,6 +1003,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
       return;
     }
     if (p !== 'unlocked') return;
+    await serial(maybeApplyUpdate).catch(() => {});
     const s = await settings();
     const since = await getS('unfocusedSince');
     if (s.lockOnUnfocus && since && now() - since >= s.timeoutMin * 60_000) await lock('unfocused');
@@ -1001,6 +1016,19 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
     const a = await api.alarms.get(ALARM);
     if (!a) await api.alarms.create(ALARM, { periodInMinutes: ALARM_PERIOD_MIN });
     await refreshBadge();
+    // An update or reload also empties chrome.storage.session. If Tab Lock itself just
+    // reloaded to install a pending update (only ever while unlocked, nothing hidden),
+    // this is not a browser start: don't lock.
+    const applying = await getL('applyingUpdate');
+    if (applying) {
+      // That reload installed the update. Clear the pending flag now — onInstalled
+      // ('update') arrives after init, and a stale flag would reload again (a loop). If
+      // the update somehow didn't install, Brave fires onUpdateAvailable again.
+      await local.remove(['applyingUpdate', 'updatePending']);
+      if (!(await getS('startupDone')) && now() - applying < APPLY_UPDATE_GRACE_MS && (await phase()) === 'unlocked') {
+        await session.set({ startupDone: now() });
+      }
+    }
     // chrome.storage.session is empty after every browser start, so a missing marker
     // means "fresh browser session" — more reliable than runtime.onStartup alone
     // (not delivered in every launch mode).
@@ -1024,6 +1052,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
         if (!w?.focused && !(await getS('unfocusedSince'))) await session.set({ unfocusedSince: now() });
       } catch { /* no windows */ }
       await promptManagedSetup();
+      await serial(maybeApplyUpdate).catch(() => {});
     }
   }
 
@@ -1066,7 +1095,37 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
   }
 
   async function onInstalled(details) {
+    if (details?.reason === 'update') await local.remove('updatePending');
     if (details?.reason === 'install') await api.tabs.create({ url: api.runtime.getURL(ONBOARDING_PAGE) });
+  }
+
+  // ---- updates -----------------------------------------------------------------------
+  // Brave installs a Tab Lock update only while Tab Lock is idle: no Tab Lock page open,
+  // no worker running (Chromium update_install_gate.cc). Hidden tabs are Tab Lock pages
+  // and are kept from being discarded, so while anything is hidden the update waits and
+  // Brave fires runtime.onUpdateAvailable. We remember that, and install it ourselves
+  // (runtime.reload) only once nothing is locked, hidden or saved.
+  async function onUpdateAvailable(details) {
+    await local.set({ updatePending: { version: typeof details?.version === 'string' ? details.version : null, at: now() } });
+    await serial(maybeApplyUpdate).catch(() => {});
+  }
+
+  /** Why an update can't be installed right now (null = it can). */
+  async function updateBlocker() {
+    if ((await phase()) !== 'unlocked') return 'locked';
+    if ((await getL('hidden'))?.length) return 'hidden-tabs';
+    if ((await getL('vault'))?.length) return 'saved-tabs';
+    if ((await getS('pvault'))?.length) return 'private-tabs'; // memory only: a reload would lose them
+    if ((await api.tabs.query({})).some((t) => isLockUrl(tabUrl(t)))) return 'lock-page-open';
+    return null;
+  }
+
+  async function maybeApplyUpdate() {
+    if (!(await getL('updatePending'))) return false;
+    if (await updateBlocker()) return false;
+    await local.set({ applyingUpdate: now() });
+    api.runtime.reload(); // installs the pending update; this worker stops here
+    return true;
   }
 
   async function refreshBadge() {
@@ -1231,6 +1290,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
       recovery: await recoveryInfo(managed),
       failedTabs: (await getS('failedTabs')) || [],
       recoveryUsed: !!(await getS('recoveryUsed')),
+      updatePending: !!(await getL('updatePending')),
       managedSetupDone: managed ? !!(await getL('keyRec')) && (await getL('keyRec')).boundTo === C.recordId(rec) : null,
       kind: rec?.kind || null,
       phase: await phase(),
@@ -1283,9 +1343,9 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
   }
 
   return {
-    init, onStartup, onInstalled, onTabCreated, onTabUpdated, onTabRemoved, onFocusChanged,
+    init, onStartup, onInstalled, onUpdateAvailable, onTabCreated, onTabUpdated, onTabRemoved, onFocusChanged,
     onIdleState, onAlarm, onActionClicked, onCommand, onMessage, onStorageChanged, lock, unlock, status,
     // exposed for tests
-    _internal: { ensureLockPage, pendingInfo, phase, sweep },
+    _internal: { ensureLockPage, pendingInfo, phase, sweep, maybeApplyUpdate, updateBlocker },
   };
 }

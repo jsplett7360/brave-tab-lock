@@ -51,7 +51,7 @@ export function createFakeChrome({ incognitoAllowed = true } = {}) {
   }
 
   const api = {
-    runtime: { id: 'testid', getURL: (p) => `chrome-extension://testid/${p}` },
+    runtime: { id: 'testid', getURL: (p) => `chrome-extension://testid/${p}`, reloads: 0, reload() { this.reloads++; } },
     extension: { isAllowedIncognitoAccess: async () => incognitoAllowed },
     storage: {
       local: area('local', writes),
@@ -99,6 +99,7 @@ export function createFakeChrome({ incognitoAllowed = true } = {}) {
           }
         }
         if (props.pinned !== undefined) t.pinned = props.pinned;
+        if (props.autoDiscardable !== undefined) t.autoDiscardable = props.autoDiscardable;
         if (props.active) { for (const o of winTabs(t.windowId)) o.active = false; t.active = true; }
         return snapshotTab(t);
       },

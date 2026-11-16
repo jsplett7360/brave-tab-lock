@@ -15,13 +15,14 @@ https://chromewebstore.google.com/detail/mpggjibcbgbnmomcdknljmffhneojlpn).
   manipulation, disruptive notifications, and messages sent without consent
   ([troubleshooting](https://developer.chrome.com/docs/webstore/troubleshooting/)).
 - The user submitted the plain description below and **appealed**. The outcome is pending.
-- 0.1.1 was never uploaded; **0.1.2 replaces it** (built 2026-11-15, not uploaded yet).
+- 0.1.1 and 0.1.2 were never uploaded; **0.1.3 replaces them** (built 2026-11-15, not
+  uploaded yet; its store text is the same as 0.1.2's).
   **Verified CRX Uploads is on** (opted in 2026-11-15), so it must be uploaded as
-  `tab-lock-0.1.2.crx` from `./tools/pack-crx.sh`, not the zip.
+  `tab-lock-0.1.3.crx` from `./tools/pack-crx.sh`, not the zip.
 - **0.1.2 changes the detailed description** (only the facts that changed: how tabs are
-  hidden, sites mode, recovery code). Paste the updated text below when you upload 0.1.2.
+  hidden, sites mode, recovery code). Paste the updated text below when you upload 0.1.3.
   Whether a description edit alone starts a new review isn't something Chrome's docs say;
-  doing it together with the 0.1.2 upload means one review either way.
+  doing it together with the 0.1.3 upload means one review either way.
 
 ## Name
 Tab Lock

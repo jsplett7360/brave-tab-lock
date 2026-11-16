@@ -76,11 +76,24 @@ Known limits. These are real, not just legal boilerplate:
    them), which ends that private session (its logins and cookies are gone).
 8. **Removing or reloading Tab Lock closes the tabs it is hiding.** Brave closes every
    tab that shows an extension's page when the extension is removed or reloaded
-   (checked: removing it while locked closed 9 of 10 hidden tabs; the window's last tab
-   became a New Tab page whose Back button still led to a hidden page). If tabs went
-   missing while locked, unlocking offers to reopen them as new tabs, which means
-   outside their container. An automatic update that installs while locked would
-   probably do the same (not checked: an update can't be triggered on purpose).
+   (checked: removing it while locked closed 9 of 10 hidden tabs). The window's last tab
+   became a New Tab page, and its history still held the hidden page: **Back once shows
+   a dead Tab Lock page, Back twice opens the hidden site**, still signed in when Tab
+   Lock isn't running (checked: tab history after removal; signed in with extensions
+   turned off). No extension can erase a tab's history, and Tab Lock is gone at that
+   point, so this can't be fixed. Lockdown mode avoids it. If hidden tabs went missing
+   while locked, unlocking offers to reopen them as new tabs, which means outside their
+   container.
+   **Updates (0.1.3):** Brave installs a Tab Lock update only while no Tab Lock page is
+   open (Chromium source, below), and every hidden tab is a Tab Lock page, so updates
+   wait while anything is hidden. Tab Lock keeps hidden tabs from being put to sleep
+   (so they stay open pages) and installs a waiting update itself right after you unlock
+   (checked with a stand-in: an update marked as waiting during a lock was not installed
+   while locked, and was installed on unlock without locking again; a 0.1.2 → 0.1.3
+   swap across a browser restart kept the hidden tabs, their container and login).
+   A real store update hasn't been observed. If Brave installs an update on its own
+   while you're unlocked, Tab Lock can't tell that from a browser start and locks once
+   (it only hides tabs in place, so nothing is lost).
 9. **Without the installer, Tab Lock can be removed** from Brave's toolbar menu (right-
    click → Remove), and Brave's own "Allow in Private" switch is outside its control.
    No extension can require a PIN to uninstall itself.
@@ -277,6 +290,13 @@ public key (not a secret: it ships inside every installed copy) is in
   the page, its `pendingUrl` is the lock page). `tabs.discard` unloads it without the
   prompt and gives the tab a new id.
 - Removing or reloading an extension closes the tabs showing its pages.
+- Updates of a service-worker extension wait while it isn't idle: "Delay installation if
+  the extension is not idle", where idle means no background host, **no open frame** and
+  no process (Chromium `extensions/browser/update_install_gate.cc`,
+  `extensions/browser/extension_util.cc`). An `onUpdateAvailable` listener only delays
+  updates for persistent background pages. A delayed update installs at the next
+  browser start, before tabs are restored.
+- An update or reload empties `chrome.storage.session`.
 - PBKDF2-HMAC-SHA256: "600,000 iterations" ([OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)).
 
 ## License

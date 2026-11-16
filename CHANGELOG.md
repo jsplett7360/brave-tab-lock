@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.3 — 2026-11-15 (not yet uploaded; replaces 0.1.2)
+- **Safe updates while locked.** Hidden tabs are kept from being auto-discarded, so a
+  Tab Lock page stays open and Brave holds updates back while anything is hidden. A
+  waiting update is remembered (`runtime.onUpdateAvailable`) and installed right after
+  unlock, only when nothing is hidden or saved. Installing it doesn't lock again.
+- Tabs hidden by 0.1.2 get the same protection when 0.1.3 starts.
+- Settings shows "A Tab Lock update is ready" while one is waiting.
+- README: the Back-twice leak after removing Tab Lock while locked is documented.
+- No new permissions; storage format unchanged.
+
 ## 0.1.2 — 2026-11-15 (not yet uploaded; replaces 0.1.1, which was never uploaded)
 - **New default: hide tabs in place.** Locking no longer closes tabs: each tab shows the
   lock screen (`lock.html#<random token>`) and goes back to its page on unlock, in the

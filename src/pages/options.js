@@ -8,6 +8,7 @@ let st = null;
 async function refresh() {
   st = await send({ type: 'status', options: true });
   show($('setup-needed'), !st.configured);
+  show($('update-note'), !!st.updatePending);
   if (!st.configured) { show($('auth'), false); show($('settings'), false); return; }
   const needAuth = !st.optionsAuthorized;
   show($('auth'), needAuth);

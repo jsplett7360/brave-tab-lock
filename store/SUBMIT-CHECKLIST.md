@@ -24,5 +24,5 @@ appealed; the outcome is pending. See `store/listing.md` → Status. Store item 
 10. ✅ **Verified CRX Uploads: opted in (2026-11-15).** Signing key fingerprint
     `01ab79107c663da8` (public half: `tools/signing-public-key.pem`). From now on, upload
     only `.crx` files from `./tools/pack-crx.sh`.
-11. Next: after the appeal, upload `tab-lock-0.1.2.crx` + the updated description (see
-    `store/GO-PUBLIC.md`). 0.1.1 was never uploaded; 0.1.2 replaces it.
+11. Next: after the appeal, upload `tab-lock-0.1.3.crx` + the updated description (see
+    `store/GO-PUBLIC.md`). 0.1.1 and 0.1.2 were never uploaded; 0.1.3 replaces them.
