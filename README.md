@@ -11,11 +11,19 @@ browsers) that locks the browser behind a PIN or passphrase:
 - **Locks automatically** after N minutes of inactivity (default 5), every time the
   browser starts, or when you press **Control+Shift+L** (Mac) / Ctrl+Shift+L, or click
   the toolbar button.
-- **Hides your tabs while locked ("Vault").** On lock, every open window's tabs (address,
-  title, pinned state, tab groups with their names and colours) are encrypted and saved,
-  the tabs are closed, and only the lock page stays. Unlocking reopens them.
+- **Hides your tabs in place while locked** (default). Each tab shows the lock screen
+  instead of its page; unlocking puts every tab back on its page, in the same tab. Tabs
+  keep their **Brave Container**, so you **stay signed in**, and keep their group, pin
+  and position. Tab Lock keeps an encrypted copy of each hidden tab's address.
+- **Optional: lock only the sites you choose** (e.g. `mail.proton.me`, `*.bank.com`).
+  Other tabs keep working while locked.
+- **Optional Lockdown mode** (Settings → Advanced): the 0.1.x behaviour. Tabs are
+  encrypted, closed and reopened on unlock. It does not keep Brave Containers.
+- **Optional recovery code** to reset a forgotten PIN; it also opens your hidden tabs.
+  Made on this device, never stored.
 - **Blocks everything else while locked.** New tabs, new windows, "reopen closed tab",
-  and brave:// pages are closed the moment they appear.
+  and brave:// pages are closed the moment they appear (in sites mode: only listed
+  sites are hidden, and brave:// pages still ask for the PIN).
 - **Gates sensitive pages even while unlocked:** History, Settings (all settings
   pages), Passwords, Extensions and Downloads ask for the PIN first (each one can be
   switched off). A correct PIN unlocks that kind of page for 2 minutes.
@@ -38,30 +46,100 @@ Known limits. These are real, not just legal boilerplate:
    files (or the macOS policy file, if you use the installer) can try every 6-digit PIN
    on their own computer. There are only one million of them, few enough to try them all
    with ordinary hardware, even at 600,000 PBKDF2 iterations each. A **passphrase** is
-   far stronger and is the default.
-2. **Brave keeps its own records.** Tab titles and addresses may already be stored in
-   Brave's history, session and cache files on disk. Tab Lock encrypts *its* copy only.
-   (Verified: after locking, the tab addresses were absent from Tab Lock's storage but
-   present in Brave's own `History` and `Sessions` files.)
-3. **The address bar can still suggest history.** To turn that off, open
+   far stronger and is the default. The recovery code is 128 random bits, so it can't
+   be guessed this way.
+2. **Brave keeps its own records, and hidden tabs keep their history.** In the default
+   mode a hidden tab stays open, so its Back history still holds the page, and Brave's
+   session files on disk keep the hidden pages' addresses **and titles** (checked: both
+   were in the `Sessions` files while locked). Tab Lock encrypts *its* copy only. Brave's
+   `History` has them too, in every mode. Lockdown mode closes the tabs instead, so
+   they're not in the tab strip or its Back history.
+3. **Pressing Back on a locked tab shows the page for a split second.** Tab Lock sends
+   the tab back to the lock screen (measured: about 0.1 s in Brave 1.99), but the page
+   is visible meanwhile, and Brave's Back-button menu may list page titles. Use Lockdown
+   mode if that matters.
+4. **Someone who restarts Brave with extensions turned off** (e.g. launching it from
+   Terminal with `--disable-extensions`) **sees the hidden tabs' history**: pressing
+   Back in a hidden tab shows the page, still signed in. In Lockdown mode the tabs are
+   gone, but the logins are still in Brave either way, so that person could also just
+   type the address. Tab Lock does not sign you out of anything.
+5. **The address bar can still suggest history.** To turn that off, open
    `brave://settings/appearance` and turn off "Show autocomplete suggestions in address
    bar".
-4. **Other profiles and other browsers are not covered.** Someone can switch to another
+6. **Other profiles and other browsers are not covered.** Someone can switch to another
    Brave profile, create a new one, or open a different browser.
-5. **Locking closes tabs**, so anything typed into a form but not submitted is lost.
-   Locking also closes private windows, which ends that private session (its logins and
-   cookies are gone).
-6. **Without the installer, Tab Lock can be removed** from Brave's toolbar menu (right-
+7. **Unsaved input can be lost.** Unlocking goes Back in each tab, which keeps the page
+   as it was (scroll, typed text) when Brave kept it in its back/forward cache; otherwise
+   the page reloads and unsaved input is lost. Pages that ask "Leave site?" are put to
+   sleep before they're hidden, so they always reload. Lockdown mode closes every tab.
+   Locking closes private windows in every mode (Tab Lock's lock screen can't open in
+   them), which ends that private session (its logins and cookies are gone).
+8. **Removing or reloading Tab Lock closes the tabs it is hiding.** Brave closes every
+   tab that shows an extension's page when the extension is removed or reloaded
+   (checked: removing it while locked closed 9 of 10 hidden tabs; the window's last tab
+   became a New Tab page whose Back button still led to a hidden page). If tabs went
+   missing while locked, unlocking offers to reopen them as new tabs, which means
+   outside their container. An automatic update that installs while locked would
+   probably do the same (not checked: an update can't be triggered on purpose).
+9. **Without the installer, Tab Lock can be removed** from Brave's toolbar menu (right-
    click → Remove), and Brave's own "Allow in Private" switch is outside its control.
    No extension can require a PIN to uninstall itself.
-7. **The protected page may flash.** Brave can show a protected page for a split second
-   before Tab Lock redirects it to the PIN prompt.
-8. **Brave's private windows with Tor don't run extensions**, so Tab Lock can't hide or
-   block them. The installer can switch Tor windows off.
-9. **Brave Containers:** no extensions API exposes a tab's container, so Tab Lock treats
-   all containers the same.
-10. After a browser start, tabs Brave restores can be visible for about 1–2 seconds
-    before Tab Lock saves and closes them.
+10. **The protected page may flash.** Brave can show a protected page for a split second
+    before Tab Lock redirects it to the PIN prompt.
+11. **Brave's private windows with Tor don't run extensions**, so Tab Lock can't hide or
+    block them. The installer can switch Tor windows off.
+12. **Brave Containers:** the default mode keeps every tab in its container (checked with
+    a signed-in test site). Lockdown mode reopens tabs outside their container, which
+    signs you out of the sites in them (checked).
+13. After a browser start, tabs Brave restores can be visible for about 1–2 seconds
+    before Tab Lock hides them.
+
+## Modes
+
+| | Default: hide in place | Lockdown mode (Settings → Advanced) |
+| --- | --- | --- |
+| On lock | each tab is navigated to `lock.html#<random token>` in the same tab | tabs are encrypted, saved and closed; one lock page stays |
+| On unlock | each tab goes Back to its page (or, if Back isn't possible, opens the saved address) | windows, tabs, pins and groups are recreated |
+| Brave Containers, logins | kept | lost (new tabs are outside the container) |
+| Page addresses in the tab's Back history / Brave's session files | yes | no |
+| "Only these sites" | available | always all tabs |
+
+The lock page's address contains only a random 128-bit token; the address and title of
+the page it replaced are kept encrypted by Tab Lock (same envelope encryption as the
+Vault, below).
+
+## Recovery code
+
+Offered when you set up Tab Lock (you can skip it) and in Settings, where making a new one
+invalidates the old one. It's 26 characters (128 random bits, letters and digits without
+I, L, O, U). Tab Lock keeps a PBKDF2 hash of it and a second encrypted copy of your
+private key, encrypted under a key derived from the code. So **"Forgot your PIN?"** on the
+lock page can set a new PIN **and** still open your hidden or saved tabs. A code works
+once; afterwards Tab Lock offers a new one. Wrong codes count as wrong PIN attempts (same
+waiting times). With a master PIN from the macOS installer, recovery codes are off: run
+the installer again instead.
+
+**Anyone with the code can reset your PIN.** Store it somewhere safe, like a password
+manager.
+
+## If you lose both your PIN and your recovery code
+
+Tab Lock can't be unlocked. To use that browser profile again you have to:
+
+- **remove Tab Lock**: right-click its toolbar button → Remove from Brave. That menu is
+  Brave's, so Tab Lock can't block it while locked. (Removal while locked was tested by
+  removing Tab Lock programmatically; the menu click itself wasn't automated.)
+  `brave://extensions` is not a way in while locked: Tab Lock closes it;
+- or, if the macOS installer added it, **remove its configuration profile** (System
+  Settings → General → Device Management; needs an administrator), which makes Brave
+  uninstall Tab Lock;
+- or **delete that browser profile**.
+
+**You lose the tabs Tab Lock is hiding.** Removing Tab Lock closes them, and its
+encrypted copy of their addresses is deleted with it (Chrome's docs: `storage.local` is
+"cleared when the extension is removed"). Brave's own History, and possibly its "recently
+closed" list, may still have them. Uninstalling the Brave app is not enough: on macOS
+that doesn't delete your profile data.
 
 ## Install from source (developers)
 
@@ -82,8 +160,10 @@ Change the shortcut at `brave://extensions/shortcuts`.
 | --- | --- |
 | Service worker (events → controller) | `src/sw.js` |
 | Lock/unlock state machine, triggers, protected pages | `src/controller.js` |
-| Save/restore windows, tabs, pinned state, tab groups | `src/vault.js` |
-| PBKDF2, AES-GCM, RSA-OAEP envelope (WebCrypto only) | `src/crypto.js` |
+| Hide in place: tokens, lock URLs | `src/hide.js` |
+| Lockdown mode: save/restore windows, tabs, pinned state, tab groups | `src/vault.js` |
+| PBKDF2, AES-GCM, RSA-OAEP envelope, recovery code (WebCrypto only) | `src/crypto.js` |
+| Settings, "only these sites" patterns | `src/settings.js` |
 | Wrong-PIN backoff | `src/backoff.js` |
 | Which pages are protected | `src/guard.js` |
 | Master PIN from macOS policy | `src/policy.js`, `managed_schema.json` |
@@ -109,8 +189,8 @@ twice.
 
 | Where | What | Encrypted? |
 | --- | --- | --- |
-| `chrome.storage.local` (disk) | PIN check record (salt + PBKDF2 hash), key pair (private half encrypted), settings, wrong-attempt counter, lock state, **vault for normal windows** | Vault and private key: yes. Others are not secret. |
-| `chrome.storage.session` (memory only, cleared when Brave quits) | **Vault for private windows**, short-lived grants for protected pages and settings | Vault: yes |
+| `chrome.storage.local` (disk) | PIN check record (salt + PBKDF2 hash), key pair (private half encrypted), recovery-code record (salt + hash + private key encrypted under the code), settings, wrong-attempt counter, lock state, **hidden tabs' addresses and titles** (default mode), **vault for normal windows** (Lockdown mode) | Hidden-tab list, vault and private key: yes. Others are not secret (the hidden-tab tokens are random). |
+| `chrome.storage.session` (memory only, cleared when Brave quits) | **Vault for private windows**, tab ↔ token map, short-lived grants for protected pages and settings | Vault: yes |
 | `chrome.storage.managed` (read-only, from macOS policy) | Master PIN check record | n/a (salted hash) |
 
 Private-window tabs are **never written to disk**. This was checked in Brave by searching
@@ -131,7 +211,7 @@ whichever comes first. The shortest timeout is 1 minute.
 | Permission | Why |
 | --- | --- |
 | `storage` | Keep the PIN check record, settings and the encrypted vault on this device. |
-| `tabs` | Read tab addresses/titles to save them on lock, close and reopen them, and see when a protected page (e.g. `brave://settings`) is opened so it can be redirected to the PIN prompt. |
+| `tabs` | Read tab addresses/titles to save them on lock; show the lock screen in each tab and send it Back to its page on unlock (Lockdown mode: close and reopen them); see when a protected page (e.g. `brave://settings`) is opened so it can be redirected to the PIN prompt. |
 | `tabGroups` | Save and restore tab group names, colours and collapsed state. |
 | `idle` | Lock after the computer has been idle for your chosen time, or immediately when the screen locks. |
 | `alarms` | A 30-second check for "Brave not focused for N minutes" and a safety net that re-closes anything opened while locked. |
@@ -187,6 +267,16 @@ public key (not a secret: it ships inside every installed copy) is in
 - Chromium force-installs extensions from outside the Chrome Web Store on macOS only "if
   the instance is managed via MDM, joined to a domain via MCX or enrolled in Chrome
   Enterprise Core" ([policy definition](https://chromium.googlesource.com/chromium/src/+/main/components/policy/resources/templates/policy_definitions/Extensions/ExtensionInstallForcelist.yaml)).
+- Brave Containers are per-tab storage partitions (domain `containers`, name = container
+  id; [brave-core source](https://github.com/brave/brave-core/tree/master/components/containers)).
+  A container tab that navigates to Tab Lock's page and back stays in its container and
+  signed in (checked with a test site, including across a browser restart).
+- `tabs.goBack` fails ("Cannot find a next page in history") when the page before was
+  never interacted with; Tab Lock then opens the saved address in the same tab.
+- A page with a "Leave site?" (`beforeunload`) handler holds `tabs.update` (the tab shows
+  the page, its `pendingUrl` is the lock page). `tabs.discard` unloads it without the
+  prompt and gives the tab a new id.
+- Removing or reloading an extension closes the tabs showing its pages.
 - PBKDF2-HMAC-SHA256: "600,000 iterations" ([OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)).
 
 ## License

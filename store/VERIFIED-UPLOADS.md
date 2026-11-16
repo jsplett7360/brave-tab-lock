@@ -45,7 +45,7 @@ passphrase. Chrome's docs describe it as "an additional layer of security to upd
    ./tools/pack-crx.sh
    ```
    Enter the passphrase. It should end with `Verified: CRX3, 23 files …` and
-   `Wrote …/tab-lock-0.1.1.crx`.
+   `Wrote …/tab-lock-<version>.crx`.
 4. **Opt in.** Dashboard → Tab Lock → **Package** → **Verified CRX Uploads** → **Opt In**.
    When asked for your public key, paste the **entire** contents of
    `tools/signing-public-key.pem` (including the `-----BEGIN PUBLIC KEY-----` and

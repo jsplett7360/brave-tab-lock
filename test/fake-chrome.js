@@ -27,12 +27,14 @@ export function createFakeChrome({ incognitoAllowed = true } = {}) {
   const tabs = new Map();
   const groups = new Map();
   const failUrls = new Set();
+  const blockNav = new Set();   // tab ids whose page holds navigations ("Leave site?")
+  const noBack = new Set();     // tab ids whose previous entry Back skips (no user activation)
   let failWindowCreate = 0;
   let managed = {};
 
   const winTabs = (wid) => [...tabs.values()].filter((t) => t.windowId === wid).sort((a, b) => a.index - b.index);
   const reindex = (wid) => winTabs(wid).forEach((t, i) => { t.index = i; });
-  const snapshotTab = (t) => ({ ...t });
+  const snapshotTab = (t) => { const { hist, histIdx, ...rest } = t; return { ...rest }; };
   const snapshotWin = (w, populate) => ({ ...w, tabs: populate ? winTabs(w.id).map(snapshotTab) : undefined });
 
   function makeTab(windowId, url, extra = {}) {
@@ -42,6 +44,8 @@ export function createFakeChrome({ incognitoAllowed = true } = {}) {
       id: nextTab++, windowId, index: winTabs(windowId).length, url: url || 'chrome://newtab/', title: extra.title || url || 'New Tab',
       pinned: false, active: false, groupId: -1, incognito: w.incognito, ...extra,
     };
+    t.hist = [t.url];
+    t.histIdx = 0;
     tabs.set(t.id, t);
     return t;
   }
@@ -82,10 +86,38 @@ export function createFakeChrome({ incognitoAllowed = true } = {}) {
       async query() { return [...tabs.values()].map(snapshotTab); },
       async update(id, props) {
         const t = tabs.get(id); if (!t) throw new Error('no tab');
-        if (props.url !== undefined) t.url = props.url;
+        if (props.url !== undefined) {
+          if (failUrls.has(props.url)) throw new Error(`cannot open ${props.url}`);
+          if (blockNav.has(id)) t.pendingUrl = props.url; // held by a "Leave site?" prompt
+          else {
+            delete t.pendingUrl;
+            t.hist = t.hist.slice(0, t.histIdx + 1);
+            t.hist.push(props.url);
+            t.histIdx = t.hist.length - 1;
+            t.url = props.url;
+            t.discarded = false;
+          }
+        }
         if (props.pinned !== undefined) t.pinned = props.pinned;
         if (props.active) { for (const o of winTabs(t.windowId)) o.active = false; t.active = true; }
         return snapshotTab(t);
+      },
+      async reload(id) { const t = tabs.get(id); if (!t) throw new Error('no tab'); t.reloads = (t.reloads || 0) + 1; },
+      async goBack(id) {
+        const t = tabs.get(id); if (!t) throw new Error('no tab');
+        if (t.histIdx === 0 || noBack.has(id)) throw new Error('Cannot find a next page in history.');
+        t.histIdx--;
+        t.url = t.hist[t.histIdx];
+      },
+      async discard(id) {
+        const t = tabs.get(id); if (!t) throw new Error('no tab');
+        tabs.delete(id);
+        const n = { ...t, id: nextTab++, discarded: true };
+        delete n.pendingUrl;
+        tabs.set(n.id, n);
+        blockNav.delete(id);
+        if (noBack.has(id)) { noBack.delete(id); noBack.add(n.id); }
+        return snapshotTab(n);
       },
       async remove(ids) {
         for (const id of [].concat(ids)) {
@@ -130,6 +162,9 @@ export function createFakeChrome({ incognitoAllowed = true } = {}) {
       return w.id;
     },
     setManaged(v) { managed = v; },
+    blockNavigation(id) { blockNav.add(id); },
+    skipBack(id) { noBack.add(id); },
+    history(id) { const t = tabs.get(id); return t ? { entries: [...t.hist], index: t.histIdx } : null; },
     failUrl(u) { failUrls.add(u); },
     failNextWindowCreates(n) { failWindowCreate = n; },
     allTabs() { return [...tabs.values()].map(snapshotTab); },

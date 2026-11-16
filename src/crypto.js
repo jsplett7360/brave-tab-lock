@@ -94,12 +94,16 @@ export async function hashSecret(secret, kind, { iterations = PBKDF2_ITERATIONS,
   return { v: RECORD_VERSION, alg: 'PBKDF2-SHA256', kind, iterations, salt: toB64(salt), hash: toB64(hash) };
 }
 
-/** Throws on a malformed or too-weak record; returns the record otherwise. */
-export function checkPinRecord(rec) {
+/**
+ * Throws on a malformed or too-weak record; returns the record otherwise.
+ * `kinds`: which record kinds are acceptable here (PIN records by default; a recovery
+ * code's record has kind 'recovery' and is only accepted where asked for).
+ */
+export function checkPinRecord(rec, kinds = ['pin', 'passphrase']) {
   if (!rec || typeof rec !== 'object') throw new TypeError('missing PIN record');
   if (rec.alg !== 'PBKDF2-SHA256') throw new TypeError('unsupported algorithm');
   if (!Number.isInteger(rec.iterations) || rec.iterations < MIN_ITERATIONS) throw new RangeError('iterations below minimum');
-  if (rec.kind !== 'pin' && rec.kind !== 'passphrase') throw new TypeError('bad kind');
+  if (!kinds.includes(rec.kind)) throw new TypeError('bad kind');
   const salt = fromB64(rec.salt);
   const hash = fromB64(rec.hash);
   if (salt.length < SALT_BYTES) throw new RangeError('salt too short');
@@ -107,8 +111,8 @@ export function checkPinRecord(rec) {
   return rec;
 }
 
-export async function verifySecret(secret, rec) {
-  checkPinRecord(rec);
+export async function verifySecret(secret, rec, kinds) {
+  checkPinRecord(rec, kinds);
   if (typeof secret !== 'string' || secret.length === 0) return false;
   const got = await pbkdf2Bits(secret, fromB64(rec.salt), rec.iterations);
   return constantTimeEqual(got, fromB64(rec.hash));
@@ -165,6 +169,97 @@ export async function unwrapPrivateKey(keyRec, secret) {
 /** Re-encrypt the private key under a new PIN (PIN change). */
 export async function rewrapKeyRecord(keyRec, oldSecret, newSecret, boundTo, { iterations = PBKDF2_ITERATIONS } = {}) {
   const pkcs8 = await exportPrivatePkcs8(keyRec, oldSecret);
+  try {
+    const rec = await wrapPrivate(pkcs8, newSecret, iterations);
+    return { v: RECORD_VERSION, pub: keyRec.pub, ...rec, boundTo };
+  } finally {
+    pkcs8.fill(0);
+  }
+}
+
+// ---- recovery code ---------------------------------------------------------------
+// 128 random bits, Crockford base32 (no I, L, O, U), 26 characters, shown in groups of 4.
+// Never stored: only a PBKDF2 hash of it (own salt) and a second copy of the profile's
+// private key encrypted under a key derived from it (own KEK salt). So the code alone can
+// reset the PIN AND open saved/hidden tabs, exactly like the PIN.
+
+export const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+export const RECOVERY_BYTES = 16;
+export const RECOVERY_CHARS = 26; // ceil(128 / 5)
+
+export function encodeCrockford(bytes) {
+  let bits = 0, value = 0, out = '';
+  for (const b of bytes) {
+    value = (value << 8) | b;
+    bits += 8;
+    while (bits >= 5) {
+      out += CROCKFORD[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+    value &= (1 << bits) - 1;
+  }
+  if (bits > 0) out += CROCKFORD[(value << (5 - bits)) & 31];
+  return out;
+}
+
+/** Group a canonical code for display: XXXX-XXXX-…-XX. */
+export function formatRecoveryCode(code) {
+  return code.match(/.{1,4}/g).join('-');
+}
+
+/** Canonical 26-character form of what the user typed, or null if it can't be a code. */
+export function normalizeRecoveryCode(input) {
+  if (typeof input !== 'string') return null;
+  const s = input.toUpperCase().replace(/[\s-]/g, '').replace(/[IL]/g, '1').replace(/O/g, '0');
+  if (s.length !== RECOVERY_CHARS) return null;
+  for (const ch of s) if (!CROCKFORD.includes(ch)) return null;
+  return s;
+}
+
+/** A fresh code (canonical form). The caller shows it once and never stores it. */
+export function generateRecoveryCode() {
+  const bytes = randomBytes(RECOVERY_BYTES);
+  try {
+    return encodeCrockford(bytes);
+  } finally {
+    bytes.fill(0);
+  }
+}
+
+/**
+ * Recovery record for `code`, given the key record and the PIN that opens it now.
+ * { v, kind:'recovery-wrap', kid, hash: <PIN-style record, kind 'recovery'>, kekSalt,
+ *   kekIterations, privIv, priv, created }. Nothing in it is secret on its own.
+ */
+export async function createRecoveryRecord(code, keyRec, pin, { iterations = PBKDF2_ITERATIONS, created = Date.now() } = {}) {
+  const canon = normalizeRecoveryCode(code);
+  if (!canon) throw new TypeError('bad recovery code');
+  const hash = await hashSecret(canon, 'recovery', { iterations });
+  const pkcs8 = await exportPrivatePkcs8(keyRec, pin);
+  try {
+    const wrap = await wrapPrivate(pkcs8, canon, iterations);
+    return { v: RECORD_VERSION, kind: 'recovery-wrap', kid: keyRec.kid, hash, ...wrap, created };
+  } finally {
+    pkcs8.fill(0);
+  }
+}
+
+/** Constant-time check of a typed code against a recovery record (same PBKDF2 cost as a PIN). */
+export async function verifyRecoveryCode(code, recRec) {
+  const canon = normalizeRecoveryCode(code);
+  if (!canon) return false;
+  return verifySecret(canon, recRec?.hash, ['recovery']);
+}
+
+/**
+ * Forgot-PIN reset: open the private key with the recovery code and re-encrypt it under
+ * the new PIN. Same key pair, so everything sealed to it still opens.
+ */
+export async function rewrapFromRecovery(keyRec, recRec, code, newSecret, boundTo, { iterations = PBKDF2_ITERATIONS } = {}) {
+  const canon = normalizeRecoveryCode(code);
+  if (!canon) throw new TypeError('bad recovery code');
+  if (recRec.kid !== keyRec.kid) throw new Error('recovery code belongs to an older key');
+  const pkcs8 = await exportPrivatePkcs8(recRec, canon);
   try {
     const rec = await wrapPrivate(pkcs8, newSecret, iterations);
     return { v: RECORD_VERSION, pub: keyRec.pub, ...rec, boundTo };

@@ -1,8 +1,8 @@
 # Installer live test (you run it; the builder records your results)
 
 **Blocked until a Tab Lock version is approved on the store** (0.1.0 was rejected and is
-under appeal; 0.1.1 isn't uploaded yet). Do this **after 0.1.1 is approved**. The installer always installs
-the store's current version, and 0.1.1 has the master-PIN setup prompt. Report each
+under appeal; 0.1.2 isn't uploaded yet). Do this **after 0.1.2 is approved**. The installer always installs
+the store's current version; 0.1.1 and later have the master-PIN setup prompt. Report each
 result in your own words; nothing here asks for your PIN.
 
 ## Setup

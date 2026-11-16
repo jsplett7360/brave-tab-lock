@@ -9,7 +9,7 @@
 <body>
   <main>
     <h1>Set up Tab Lock</h1>
-    <p>Tab Lock locks this browser profile behind a PIN after inactivity, when Brave starts, or when you press the shortcut. While it is locked, your open tabs are encrypted, closed, and reopened when you unlock.</p>
+    <p>Tab Lock locks this browser profile behind a PIN after inactivity, when Brave starts, or when you press the shortcut. While it is locked, each tab shows a lock screen instead of its page; unlocking puts every tab back on its page, so you stay signed in and Brave Containers keep working.</p>
 
     <section id="local-setup" class="panel hidden" aria-labelledby="local-title">
       <h2 class="first" id="local-title">1. Choose a PIN or passphrase</h2>
@@ -29,6 +29,24 @@
       </form>
     </section>
 
+    <section id="recovery-step" class="panel hidden" aria-labelledby="recovery-title">
+      <h2 class="first" id="recovery-title">2. Recovery code (recommended)</h2>
+      <p>A recovery code resets your PIN if you forget it, and still opens the tabs Tab Lock is hiding. It is made on this device and never leaves it.</p>
+      <div class="row" id="recovery-choice">
+        <button id="rc-create" type="button">Create recovery code</button>
+        <button id="rc-skip" type="button" class="secondary">Skip</button>
+      </div>
+      <div id="rc-skip-confirm" class="hidden">
+        <p class="warn" id="rc-skip-text"></p>
+        <div class="row">
+          <button id="rc-skip-yes" type="button" class="danger">Skip anyway</button>
+          <button id="rc-skip-back" type="button" class="secondary">Back</button>
+        </div>
+      </div>
+      <div id="rc-msg" class="msg" role="status" aria-live="polite"></div>
+      <section id="code-panel" class="hidden gap"></section>
+    </section>
+
     <section id="managed-setup" class="panel hidden" aria-labelledby="managed-title">
       <h2 class="first" id="managed-title">1. Enter your master PIN</h2>
       <p class="muted">This Mac’s installer set a master PIN for every Brave profile. Enter it once so this profile can encrypt your tabs when it locks.</p>
@@ -46,7 +64,7 @@
     </section>
 
     <section class="panel gap" aria-labelledby="next-title">
-      <h2 class="first" id="next-title">2. Recommended next steps</h2>
+      <h2 class="first" id="next-title">Recommended next steps</h2>
       <ul>
         <li><strong>Private windows:</strong> open <code>brave://extensions</code>, choose Tab Lock → Details, and turn on “Allow in Private”. <span id="incog-status"></span></li>
         <li><strong>Address bar suggestions:</strong> the address bar can still suggest sites from your history. <span id="omnibox-help">To turn that off, open <code>brave://settings/appearance</code> and turn off “Show autocomplete suggestions in address bar”.</span></li>
@@ -56,9 +74,9 @@
       <ul class="muted">
         <li>It is a convenience layer. Your Mac’s lock screen and FileVault are the real protection.</li>
         <li>Anyone who can read this profile’s files can try PINs offline; a 6-digit PIN falls quickly. Use a passphrase.</li>
-        <li>Tab titles and addresses may already be stored in Brave’s history and session files on disk.</li>
+        <li>Tab titles and addresses may already be stored in Brave’s history and session files on disk. Hidden tabs also keep their pages in their Back history, and pressing Back on a locked tab can show the page for a split second.</li>
         <li>Someone can open a different Brave profile, make a new one, or use another browser.</li>
-        <li>Locking closes your tabs, so anything typed but not submitted in a form is lost.</li>
+        <li>If a page has to reload when you unlock, anything typed but not submitted on it is lost. (Lockdown mode, under Settings → Advanced, always closes tabs.)</li>
         <li>Without the macOS installer, Tab Lock can be removed from Brave’s toolbar menu.</li>
       </ul>
     </section>

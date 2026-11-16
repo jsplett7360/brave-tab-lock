@@ -34,6 +34,17 @@
         <label class="check"><input id="unfocus" type="checkbox"> Count time when Brave is not the focused app as inactivity</label>
         <label class="check"><input id="startup" type="checkbox"> Lock every time Brave starts</label>
 
+        <fieldset id="scope-set">
+          <legend>What to lock</legend>
+          <label class="check"><input type="radio" name="scope" id="scope-all" value="all"> All tabs</label>
+          <label class="check"><input type="radio" name="scope" id="scope-sites" value="sites"> Only these sites</label>
+          <textarea id="sites" aria-label="Sites to lock, one per line" aria-describedby="sites-help sites-msg" spellcheck="false" placeholder="mail.proton.me&#10;*.bank.com"></textarea>
+          <p id="sites-help" class="muted">One site per line. <code>mail.proton.me</code> means exactly that site; <code>*.bank.com</code> also covers bank.com and every address ending in .bank.com. While locked, other sites keep working, and any tab that opens a listed site is hidden at once.</p>
+          <div id="sites-msg" class="msg error" role="status" aria-live="polite"></div>
+          <p id="scope-lockdown-note" class="muted hidden">Lockdown mode (under Advanced) always locks all tabs.</p>
+          <p class="muted">Tabs stay open behind the lock screen, so they keep their container and you stay signed in. Their addresses and titles stay in each tab’s Back history and in Brave’s own files (Tab Lock can’t erase those). Pressing Back on a locked tab can show the page for a split second before Tab Lock hides it again. If a page has to reload when you unlock, unsaved input on it is lost; pages that ask “Leave site?” always reload.</p>
+        </fieldset>
+
         <fieldset>
           <legend>Pages that always need the PIN</legend>
           <label class="check"><input type="checkbox" data-cat="history"> History</label>
@@ -50,7 +61,22 @@
           <p class="muted">After 5 wrong attempts, each further attempt has to wait longer: 30 seconds, then 1 minute, 2 minutes and so on, up to 1 hour.</p>
           <label class="check"><input id="wipe" type="checkbox"> Erase the saved tabs after this many wrong attempts in a row:</label>
           <input id="wipe-n" type="number" min="6" max="1000" step="1" aria-label="Wrong attempts before erasing saved tabs">
+          <p class="muted">Wrong recovery codes count too. In the default mode, erasing closes the hidden tabs; Brave’s own “recently closed” list may still be able to reopen them.</p>
         </fieldset>
+
+        <details id="advanced">
+          <summary>Advanced</summary>
+          <label class="check"><input id="lockdown" type="checkbox" aria-describedby="lockdown-help"> Lockdown mode — close and encrypt tabs while locked</label>
+          <div id="lockdown-help">
+            <p>Lockdown mode closes your tabs when Tab Lock locks, saves them encrypted on this device, and reopens them when you unlock. Use it if you don’t want locked tabs kept in the browser’s tab history.</p>
+            <ul class="warn">
+              <li>It doesn’t work with Brave Containers yet: tabs come back outside their container, and you’ll be signed out of the sites in them.</li>
+              <li>Sites where you use “Forget me when I close this site” may sign you out.</li>
+              <li>Anything typed into a page but not submitted is lost.</li>
+              <li>It doesn’t replace disk encryption (FileVault), your computer’s lock screen, or other security practices. It covers one narrow case: someone using your computer while it’s already unlocked.</li>
+            </ul>
+          </div>
+        </details>
         <button type="submit">Save settings</button>
         <div id="settings-msg" class="msg" role="status" aria-live="polite"></div>
       </form>
@@ -75,10 +101,29 @@
         </form>
       </section>
 
+      <section class="panel gap" aria-labelledby="rc-title">
+        <h2 class="first" id="rc-title">Recovery code</h2>
+        <p id="rc-managed" class="hidden">Recovery codes are off because your PIN is managed by your Mac. Run the installer again to change it.</p>
+        <div id="rc-area">
+          <p id="rc-status"></p>
+          <p class="muted">A recovery code resets a forgotten PIN and still opens your hidden tabs. Creating a new one makes the old one stop working.</p>
+          <form id="rc-form" autocomplete="off">
+            <label for="rc-secret" id="rc-secret-label">Current PIN or passphrase</label>
+            <input id="rc-secret" type="password" autocomplete="off" spellcheck="false" required aria-describedby="rc-msg">
+            <div class="row">
+              <button id="rc-create" type="submit">Create new recovery code</button>
+              <button id="rc-remove" type="button" class="danger">Remove recovery code</button>
+            </div>
+            <div id="rc-msg" class="msg" role="status" aria-live="polite"></div>
+          </form>
+          <section id="code-panel" class="hidden gap"></section>
+        </div>
+      </section>
+
       <section class="panel gap">
         <h2 class="first">Private windows</h2>
         <p id="incog-status"></p>
-        <p class="muted">To protect private windows: open <code>brave://extensions</code>, choose Tab Lock → Details, and turn on “Allow in Private”. Private-window tabs are only ever kept in memory, never written to disk. Locking closes private windows, which ends that private session (its logins and cookies are gone). Brave’s private windows with Tor don’t run extensions, so Tab Lock can’t hide or block them.</p>
+        <p class="muted">To protect private windows: open <code>brave://extensions</code>, choose Tab Lock → Details, and turn on “Allow in Private”. Private-window tabs are only ever kept in memory, never written to disk. Tab Lock’s lock screen can’t open inside private windows, so in every mode locking closes the private tabs it locks, which ends that private session (its logins and cookies are gone). Brave’s private windows with Tor don’t run extensions, so Tab Lock can’t hide or block them.</p>
         <h2>Keyboard shortcut</h2>
         <p class="muted">The default is Control+Shift+L on Mac (Ctrl+Shift+L elsewhere). Change it at <code>brave://extensions/shortcuts</code>. Clicking the Tab Lock toolbar button also locks immediately.</p>
         <button id="lock-now" type="button" class="secondary">Lock now</button>

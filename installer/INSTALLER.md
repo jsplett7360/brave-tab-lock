@@ -92,7 +92,8 @@ master PIN once: the lock page offers "Use previous PIN" or "Discard saved tabs"
 or extension is removed from this list, Google Chrome automatically uninstalls it."
 So:
 
-1. **Unlock Tab Lock in every profile first**, so no tabs are still saved in a vault.
+1. **Unlock Tab Lock in every profile first**, so no tabs are still saved in a vault or
+   hidden: removing Tab Lock closes the tabs it is hiding.
 2. Remove the profile:
    ```sh
    ./installer/uninstall.sh          # shows what it would do
@@ -102,6 +103,11 @@ So:
    **Remove**.
 3. Quit and reopen Brave. To keep using Tab Lock without the installer, reinstall it from
    the store link and set a PIN again.
+
+### Recovery codes
+
+With a master PIN, recovery codes are off (Tab Lock's settings say so). To change a
+forgotten master PIN, run the installer again.
 
 ## Not yet verified
 

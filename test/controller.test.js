@@ -7,11 +7,14 @@ import * as C from '../src/crypto.js';
 const LOCK = `chrome-extension://testid/${LOCK_PAGE}`;
 const PIN = '482913';
 
+// Every test in this file covers the Vault, which is now "Lockdown mode" (Settings →
+// Advanced). The default mode, hide in place, is covered by hide.test.js.
 function setup(opts) {
   const f = createFakeChrome(opts);
+  f.api.storage.local._replace({ settings: { mode: 'lockdown' } });
   let t = 1_000_000;
   const clock = { now: () => t, advance: (ms) => { t += ms; }, schedule: () => {} };
-  const c = createController(f.api, clock);
+  const c = createController(f.api, { ...clock, sleep: async () => {} });
   const msg = (m, page) => c.onMessage(m, f.sender(page));
   return { f, c, clock, msg };
 }

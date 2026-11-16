@@ -15,8 +15,13 @@ https://chromewebstore.google.com/detail/mpggjibcbgbnmomcdknljmffhneojlpn).
   manipulation, disruptive notifications, and messages sent without consent
   ([troubleshooting](https://developer.chrome.com/docs/webstore/troubleshooting/)).
 - The user submitted the plain description below and **appealed**. The outcome is pending.
-- 0.1.1 has **not** been uploaded. **Verified CRX Uploads is on** (opted in 2026-11-15),
-  so it must be uploaded as `tab-lock-0.1.1.crx` from `./tools/pack-crx.sh`, not the zip.
+- 0.1.1 was never uploaded; **0.1.2 replaces it** (built 2026-11-15, not uploaded yet).
+  **Verified CRX Uploads is on** (opted in 2026-11-15), so it must be uploaded as
+  `tab-lock-0.1.2.crx` from `./tools/pack-crx.sh`, not the zip.
+- **0.1.2 changes the detailed description** (only the facts that changed: how tabs are
+  hidden, sites mode, recovery code). Paste the updated text below when you upload 0.1.2.
+  Whether a description edit alone starts a new review isn't something Chrome's docs say;
+  doing it together with the 0.1.2 upload means one review either way.
 
 ## Name
 Tab Lock
@@ -27,7 +32,7 @@ Locks your browser behind a PIN and hides your open tabs. Everything stays on yo
 ## Category / language
 Category: Privacy & Security (pick the closest available in the dashboard). Language: English.
 
-## Detailed description (submitted 2026-11-15, replaces the rejected 0.1.0 text)
+## Detailed description (0.1.2; the 2026-11-15 appeal text with only the changed facts updated)
 
 Tab Lock locks your browser behind a PIN or passphrase and hides your open tabs until you unlock it. It works in Chrome and other Chromium-based browsers.
 
@@ -37,35 +42,40 @@ Features
 
 - Locks automatically after a period of inactivity you choose (default 5 minutes), when your screen locks, and when the browser starts.
 - Lock instantly with a keyboard shortcut (Control+Shift+L on Mac, Ctrl+Shift+L elsewhere) or the toolbar button.
-- While locked, your open tabs are encrypted, closed and replaced by a lock screen. Unlocking restores your windows, tabs, pinned tabs and tab groups.
+- While locked, each open tab shows a lock screen instead of its page. Unlocking returns every tab to its page, so you stay signed in. An optional Lockdown mode closes and encrypts tabs instead.
+- Optional: lock only the sites you choose.
+- Optional recovery code to reset a forgotten PIN, kept on your device.
 - History, Settings, Passwords, Extensions and Downloads pages can require your PIN even while unlocked. Each can be turned on or off.
 - After several wrong attempts, each new attempt must wait longer.
 - Works in private windows if you allow it. Private-window tabs are kept in memory only and never written to disk.
 
 How your data is handled
 
-Your PIN is never stored. Tab Lock keeps only a salted hash of it and encrypts your saved tabs on your device using the browser's built-in Web Crypto API. The extension does not access the content of the websites you visit.
+Your PIN and recovery code are never stored. Tab Lock keeps only salted hashes of them and encrypts the addresses of your hidden tabs on your device using the browser's built-in Web Crypto API. The extension does not access the content of the websites you visit.
 
 Permissions
 
 - Storage: settings and the encrypted tab list, on your device.
-- Tabs and tab groups: save, close and restore your tabs, and detect protected pages.
+- Tabs and tab groups: hide and restore your tabs, and detect protected pages.
 - Idle and alarms: lock after inactivity.
 
 Good to know
 
-Tab Lock adds a layer of privacy when your computer is already unlocked. It does not replace your computer's lock screen or disk encryption. A passphrase is stronger than a short PIN. Locking closes tabs, so unsaved form input is lost. Full details are in the project's README.
+Tab Lock adds a layer of privacy when your computer is already unlocked. It does not replace your computer's lock screen or disk encryption. A passphrase is stronger than a short PIN. If a page reloads when you unlock, unsaved form input on it is lost. Full details are in the project's README.
 
 ## Single purpose (Privacy practices tab)
 Lock the browser behind a PIN: hide the user's open tabs while locked and require the PIN
 to reopen them or to open sensitive browser pages.
 
 ## Permission justifications (Privacy practices tab)
-- storage: Saves the PIN verification record (salt + hash), settings, the wrong-attempt
-  counter and the encrypted list of tabs, on the user's device only.
-- tabs: Reads tab addresses and titles to encrypt and save them when locking, closes and
-  reopens them, and detects when a protected browser page (history, settings, passwords,
-  extensions, downloads) is opened so it can ask for the PIN.
+- storage: Saves the PIN verification record (salt + hash), the optional recovery-code
+  record (salt + hash), settings, the wrong-attempt counter and the encrypted list of
+  tabs, on the user's device only.
+- tabs: Reads tab addresses and titles to encrypt and save them when locking, shows the
+  lock screen in each tab and returns each tab to its page on unlock (or, in the optional
+  Lockdown mode, closes and reopens them), and detects when a protected browser page
+  (history, settings, passwords, extensions, downloads) is opened so it can ask for the
+  PIN.
 - tabGroups: Saves and restores tab group names, colors and collapsed state across a lock.
 - idle: Locks after the user's chosen period of inactivity, and immediately when the
   computer's screen locks.

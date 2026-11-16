@@ -23,7 +23,53 @@
           <input id="secret" type="password" autocomplete="off" spellcheck="false" required aria-describedby="msg">
           <button id="submit" type="submit">Unlock</button>
           <div id="msg" class="msg" role="status" aria-live="polite"></div>
+          <button id="forgot" type="button" class="link hidden">Forgot your PIN?</button>
         </form>
+
+        <section id="forgot-panel" class="hidden" aria-labelledby="forgot-title">
+          <h2 id="forgot-title">Reset your PIN with your recovery code</h2>
+          <div id="forgot-none" class="hidden">
+            <p>No recovery code was set up for this profile.</p>
+            <p class="warn">Without your PIN, Tab Lock can’t be unlocked. To use this browser profile again you would have to remove Tab Lock or delete the profile, and you would lose the tabs Tab Lock is hiding (removing Tab Lock closes them).</p>
+          </div>
+          <div id="forgot-managed" class="hidden">
+            <p>Your PIN is managed by your Mac, so recovery codes are off. Run the installer again to set a new master PIN.</p>
+          </div>
+          <form id="forgot-form" autocomplete="off" class="hidden">
+            <label for="rc-code">Recovery code</label>
+            <input id="rc-code" type="text" autocomplete="off" spellcheck="false" autocapitalize="characters" required aria-describedby="rc-help rc-msg">
+            <p id="rc-help" class="muted">26 letters and digits. Dashes, spaces and lower case are fine. The code works once.</p>
+            <label for="rc-kind">New type</label>
+            <select id="rc-kind">
+              <option value="passphrase">Passphrase (stronger, at least 8 characters)</option>
+              <option value="pin">PIN (at least 6 digits)</option>
+            </select>
+            <label for="rc-next">New PIN or passphrase</label>
+            <input id="rc-next" type="password" autocomplete="new-password" spellcheck="false" required>
+            <label for="rc-next2">Type it again</label>
+            <input id="rc-next2" type="password" autocomplete="new-password" spellcheck="false" required>
+            <div class="row">
+              <button id="rc-submit" type="submit">Reset PIN and unlock</button>
+              <button id="rc-cancel" type="button" class="secondary">Cancel</button>
+            </div>
+            <div id="rc-msg" class="msg" role="status" aria-live="polite"></div>
+          </form>
+        </section>
+
+        <section id="new-code" class="hidden" aria-labelledby="new-code-title">
+          <h2 id="new-code-title">Your PIN was reset</h2>
+          <p>The recovery code you used no longer works. Make a new one now so you can still reset your PIN next time.</p>
+          <form id="new-code-form" autocomplete="off">
+            <label for="nc-secret" id="nc-label">Your new PIN or passphrase</label>
+            <input id="nc-secret" type="password" autocomplete="off" spellcheck="false" required aria-describedby="nc-msg">
+            <div class="row">
+              <button type="submit">Create a new recovery code</button>
+              <button id="nc-later" type="button" class="secondary">Not now</button>
+            </div>
+            <div id="nc-msg" class="msg" role="status" aria-live="polite"></div>
+          </form>
+        </section>
+        <section id="code-panel" class="hidden"></section>
 
         <section id="problems" class="hidden" aria-labelledby="problems-title">
           <h2 id="problems-title">Some tabs were not reopened</h2>
@@ -35,6 +81,8 @@
             <div class="row">
               <button id="retry" type="submit" class="secondary">Retry restore</button>
               <button id="recover-old" type="button" class="secondary hidden">Use previous PIN</button>
+              <button id="reopen-hidden" type="button" class="secondary hidden">Reopen tabs</button>
+              <button id="discard-hidden" type="button" class="danger hidden">Discard them</button>
               <button id="discard" type="button" class="danger">Discard saved tabs</button>
             </div>
             <div id="recover-msg" class="msg" role="status" aria-live="polite"></div>

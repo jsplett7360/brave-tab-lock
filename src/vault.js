@@ -5,15 +5,16 @@ const GROUP_COLORS = new Set(['grey', 'blue', 'red', 'yellow', 'green', 'pink', 
 
 /**
  * Snapshot every normal window of the given kind (incognito or not).
- * `isOwnUrl(url)` filters out Tab Lock's own pages.
+ * `isOwnUrl(url)` filters out Tab Lock's own pages; optional `include(tab)` keeps only
+ * matching tabs (sites mode).
  */
-export async function captureWindows(api, { incognito, isOwnUrl }) {
+export async function captureWindows(api, { incognito, isOwnUrl, include = () => true }) {
   const wins = await api.windows.getAll({ populate: true, windowTypes: ['normal'] });
   const out = [];
   for (const w of wins) {
     if (!!w.incognito !== !!incognito) continue;
     const tabs = (w.tabs || [])
-      .filter((t) => !isOwnUrl(t.pendingUrl || t.url || ''))
+      .filter((t) => !isOwnUrl(t.pendingUrl || t.url || '') && include(t))
       .sort((a, b) => a.index - b.index);
     if (tabs.length === 0) continue;
     const groups = {};

@@ -1,11 +1,18 @@
-import { send, $, show, setMsg, failureText, configureSecretInput } from './common.js';
+import { send, $, show, setMsg, failureText, configureSecretInput, showRecoveryCode, RECOVERY_PANEL_HTML, RECOVERY_TEXT } from './common.js';
+
+$('code-panel').innerHTML = RECOVERY_PANEL_HTML; // static markup, no data
+$('rc-skip-text').textContent = RECOVERY_TEXT.skip;
+// The PIN just chosen, kept in this page's memory only until the recovery step is done.
+let justSet = null;
+let recoveryStep = false;
 
 async function refresh() {
   const st = await send({ type: 'status' });
   const managedPending = st.managed && !st.managedSetupDone;
   show($('managed-setup'), managedPending);
   show($('local-setup'), !st.managed && !st.configured);
-  show($('done'), st.configured && !managedPending);
+  show($('recovery-step'), recoveryStep);
+  show($('done'), st.configured && !managedPending && !recoveryStep);
   if (managedPending) {
     $('m1-label').textContent = st.kind === 'passphrase' ? 'Master passphrase' : 'Master PIN';
     configureSecretInput($('m1'), st.kind);
@@ -24,8 +31,29 @@ $('local-form').addEventListener('submit', async (e) => {
   $('s1').value = ''; $('s2').value = '';
   if (!res?.ok) { setMsg($('local-msg'), failureText(res), 'error'); return; }
   setMsg($('local-msg'), '');
+  justSet = next;
+  recoveryStep = true;
   refresh();
 });
+
+function finishRecoveryStep() {
+  justSet = null;
+  recoveryStep = false;
+  refresh();
+}
+
+$('rc-create').addEventListener('click', async () => {
+  setMsg($('rc-msg'), 'Creating… (this takes a moment)');
+  const res = await send({ type: 'createRecovery', secret: justSet || '' });
+  if (!res?.ok) { setMsg($('rc-msg'), failureText(res), 'error'); return; }
+  setMsg($('rc-msg'), '');
+  justSet = null;
+  show($('recovery-choice'), false);
+  showRecoveryCode($('code-panel'), res.code, finishRecoveryStep);
+});
+$('rc-skip').addEventListener('click', () => { show($('recovery-choice'), false); show($('rc-skip-confirm'), true); $('rc-skip-yes').focus(); });
+$('rc-skip-back').addEventListener('click', () => { show($('rc-skip-confirm'), false); show($('recovery-choice'), true); $('rc-create').focus(); });
+$('rc-skip-yes').addEventListener('click', finishRecoveryStep);
 
 $('managed-form').addEventListener('submit', async (e) => {
   e.preventDefault();
