@@ -23,6 +23,7 @@ async function refresh() {
 }
 
 $('kind').addEventListener('change', () => configureSecretInput($('s1'), $('kind').value));
+configureSecretInput($('s1'), $('kind').value); // PIN is the default
 
 $('local-form').addEventListener('submit', async (e) => {
   e.preventDefault();

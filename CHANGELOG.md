@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.6 — 2026-11-19 (not yet uploaded; replaces 0.1.5)
+- **PIN is now the default** when you set up Tab Lock, change your PIN, or reset it with a
+  recovery code. A passphrase is still offered, labelled as stronger; a PIN is easier to
+  remember. The minimum lengths are unchanged (6 digits / 8 characters).
+- **New: "All tabs except these sites"** (Settings → What to lock). Tabs on the sites you
+  list stay usable while Tab Lock is locked; every other tab is hidden as usual. A new tab,
+  or a tab that leaves a listed site (link, redirect or typed address), is hidden as soon
+  as its new page loads, so that page can be visible for about a second; private-window tabs
+  outside the list are closed and come back after unlock. Browser pages (history, settings
+  and so on) are never excepted. Its site list is separate from "Only these sites" and uses
+  the same format and validation. A warning next to the option says the listed sites stay
+  visible to anyone at your computer while locked.
+- Includes 0.1.5 (locked windows never pop to the front). No new permissions; no network
+  code. Tests: 112.
+
 ## 0.1.5 — 2026-11-19 (not yet uploaded; replaces 0.1.4)
 - **Locked windows no longer pop to the front.** While locked, Tab Lock's 30-second safety
   check (and repeated idle or screen-lock events) focused the lock page's window, which

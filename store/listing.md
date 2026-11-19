@@ -20,12 +20,12 @@ https://chromewebstore.google.com/detail/mpggjibcbgbnmomcdknljmffhneojlpn).
   not reproducible". The exact reviewer steps are unknown. A simple lock/unlock of 0.1.1 in
   a fresh Chrome restores tabs; the likeliest failing path was lock → restart → unlock
   (Chrome doesn't restore the previous session by default).
-- 0.1.2 and 0.1.3 were never uploaded; **0.1.4 replaces them** (2026-11-19), and **0.1.5**
-  (same description; locked windows no longer pop to the front) replaces 0.1.4 if it isn't
-  uploaded yet. Every claim
+- 0.1.2, 0.1.3, 0.1.4 and 0.1.5 were never uploaded; **0.1.6 replaces them** (2026-11-19:
+  locked windows no longer pop to the front, PIN is the default, "All tabs except these
+  sites"). Every claim
   in the description below was re-run from the package in fresh Chrome 157 and Brave 1.100
   profiles (Item 9 record in Life/PROGRESS.md). **Verified CRX Uploads is on**, so upload
-  `tab-lock-0.1.5.crx` from `./tools/pack-crx.sh`, not the zip, with the description below
+  `tab-lock-0.1.6.crx` from `./tools/pack-crx.sh`, not the zip, with the description below
   and `store/REVIEWER-TEST-INSTRUCTIONS.md` in the "Test instructions" field.
 
 ## Name
@@ -37,7 +37,7 @@ Locks your browser behind a PIN and hides your open tabs. Everything stays on yo
 ## Category / language
 Category: Privacy & Security (pick the closest available in the dashboard). Language: English.
 
-## Detailed description (0.1.4 and 0.1.5)
+## Detailed description (0.1.6)
 
 Tab Lock locks your browser behind a PIN or passphrase and hides your open tabs until you unlock it. It works in Chrome and other Chromium-based browsers.
 
@@ -49,7 +49,7 @@ Features
 - Lock instantly with a keyboard shortcut (Control+Shift+L on Mac, Ctrl+Shift+L elsewhere) or the toolbar button.
 - While locked, each open tab shows a lock screen instead of its page. Unlocking returns every tab to its page, so you stay signed in. If the browser did not reopen your tabs after a restart, unlocking reopens them in their windows, with pinned tabs and tab groups.
 - Optional Lockdown mode closes and encrypts your tabs while locked, and reopens your windows, tabs, pinned tabs and tab groups when you unlock.
-- Optional: lock only the sites you choose.
+- Optional: lock only the sites you choose, or every tab except the sites you choose (those stay usable while locked).
 - Optional recovery code to reset a forgotten PIN, kept on your device.
 - History, Settings, Passwords, Extensions and Downloads pages can require your PIN even while unlocked. Each can be turned on or off.
 - After 5 wrong attempts you must wait before trying again, and the wait grows with more wrong attempts.

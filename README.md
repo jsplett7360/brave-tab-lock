@@ -117,6 +117,7 @@ Known limits. These are real, not just legal boilerplate:
 | Brave Containers, logins | kept | lost (new tabs are outside the container) |
 | Page addresses in the tab's Back history / Brave's session files | yes | no |
 | "Only these sites" | available | always all tabs |
+| "All tabs except these sites" (listed sites stay usable while locked; a tab that leaves them is hidden at once) | available | always all tabs |
 
 The lock page's address contains only a random 128-bit token; the address and title of
 the page it replaced are kept encrypted by Tab Lock (same envelope encryption as

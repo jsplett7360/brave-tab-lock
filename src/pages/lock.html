@@ -41,8 +41,8 @@
             <p id="rc-help" class="muted">26 letters and digits. Dashes, spaces and lower case are fine. The code works once.</p>
             <label for="rc-kind">New type</label>
             <select id="rc-kind">
-              <option value="passphrase">Passphrase (stronger, at least 8 characters)</option>
-              <option value="pin">PIN (at least 6 digits)</option>
+              <option value="pin" selected>PIN (at least 6 digits, easier to remember)</option>
+              <option value="passphrase">Passphrase (at least 8 characters, stronger)</option>
             </select>
             <label for="rc-next">New PIN or passphrase</label>
             <input id="rc-next" type="password" autocomplete="new-password" spellcheck="false" required>

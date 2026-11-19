@@ -39,19 +39,22 @@ function fill(s) {
   $('wipe').checked = s.wipeAfter.enabled;
   $('wipe-n').value = s.wipeAfter.n;
   $('lockdown').checked = s.mode === 'lockdown';
-  $(s.scope === 'sites' ? 'scope-sites' : 'scope-all').checked = true;
+  $(s.scope === 'sites' ? 'scope-sites' : s.scope === 'except' ? 'scope-except' : 'scope-all').checked = true;
   $('sites').value = s.sites.join('\n');
+  $('except-sites').value = (s.exceptSites || []).join('\n');
   if (s.mode === 'lockdown') $('advanced').open = true;
   syncScope();
 }
 
 function syncScope() {
   const lockdown = $('lockdown').checked;
-  for (const id of ['scope-all', 'scope-sites']) $(id).disabled = lockdown;
+  for (const id of ['scope-all', 'scope-sites', 'scope-except']) $(id).disabled = lockdown;
   $('sites').disabled = lockdown || !$('scope-sites').checked;
+  $('except-sites').disabled = lockdown || !$('scope-except').checked;
+  show($('except-warn'), !lockdown && $('scope-except').checked);
   show($('scope-lockdown-note'), lockdown);
 }
-for (const id of ['lockdown', 'scope-all', 'scope-sites']) $(id).addEventListener('change', syncScope);
+for (const id of ['lockdown', 'scope-all', 'scope-sites', 'scope-except']) $(id).addEventListener('change', syncScope);
 
 function renderRecovery() {
   const r = st.recovery || {};
@@ -80,8 +83,9 @@ function read() {
     protect,
     wipeAfter: { enabled: $('wipe').checked, n: parseInt($('wipe-n').value, 10) },
     mode: $('lockdown').checked ? 'lockdown' : 'hide',
-    scope: $('scope-sites').checked ? 'sites' : 'all',
+    scope: $('scope-sites').checked ? 'sites' : $('scope-except').checked ? 'except' : 'all',
     sites: parseSiteList($('sites').value).sites,
+    exceptSites: parseSiteList($('except-sites').value).sites,
   };
 }
 
@@ -99,14 +103,16 @@ $('auth-form').addEventListener('submit', async (e) => {
 $('settings-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   setMsg($('sites-msg'), '', 'error');
-  if (!$('lockdown').checked && $('scope-sites').checked) {
-    const { sites, errors } = parseSiteList($('sites').value);
+  setMsg($('except-msg'), '', 'error');
+  for (const [radio, box, msg] of [['scope-sites', 'sites', 'sites-msg'], ['scope-except', 'except-sites', 'except-msg']]) {
+    if ($('lockdown').checked || !$(radio).checked) continue;
+    const { sites, errors } = parseSiteList($(box).value);
     if (errors.length) {
-      setMsg($('sites-msg'), errors.map((x) => (x.line ? `Line ${x.line} (${x.text}): ${x.error}` : x.error)).join(' '), 'error');
-      $('sites').focus();
+      setMsg($(msg), errors.map((x) => (x.line ? `Line ${x.line} (${x.text}): ${x.error}` : x.error)).join(' '), 'error');
+      $(box).focus();
       return;
     }
-    if (!sites.length) { setMsg($('sites-msg'), 'Add at least one site, or choose All tabs.', 'error'); $('sites').focus(); return; }
+    if (!sites.length) { setMsg($(msg), 'Add at least one site, or choose All tabs.', 'error'); $(box).focus(); return; }
   }
   const res = await send({ type: 'saveSettings', settings: read() });
   if (res?.error === 'auth') { setMsg($('settings-msg'), 'Your settings session expired. Enter your PIN again.', 'error'); refresh(); return; }
@@ -114,6 +120,10 @@ $('settings-form').addEventListener('submit', async (e) => {
   fill(res.settings);
   setMsg($('settings-msg'), 'Saved.', 'ok');
 });
+
+$('kind').addEventListener('change', () => { configureSecretInput($('next'), $('kind').value); configureSecretInput($('next2'), $('kind').value); });
+configureSecretInput($('next'), $('kind').value); // PIN is the default
+configureSecretInput($('next2'), $('kind').value);
 
 $('pin-form').addEventListener('submit', async (e) => {
   e.preventDefault();

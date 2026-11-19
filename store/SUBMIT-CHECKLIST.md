@@ -24,6 +24,6 @@ appealed; the outcome is pending. See `store/listing.md` → Status. Store item 
 10. ✅ **Verified CRX Uploads: opted in (2026-11-15).** Signing key fingerprint
     `01ab79107c663da8` (public half: `tools/signing-public-key.pem`). From now on, upload
     only `.crx` files from `./tools/pack-crx.sh`.
-11. Next: upload `tab-lock-0.1.5.crx` + the 0.1.4/0.1.5 description and paste
+11. Next: upload `tab-lock-0.1.6.crx` + the 0.1.6 description and paste
     `store/REVIEWER-TEST-INSTRUCTIONS.md` into "Test instructions" (see `store/GO-PUBLIC.md`).
-    0.1.1 was rejected (Red Potassium); 0.1.2 and 0.1.3 were never uploaded; 0.1.5 replaces 0.1.4 if that isn't uploaded yet.
+    0.1.1 was rejected (Red Potassium); 0.1.2–0.1.5 were never uploaded; 0.1.6 replaces them.

@@ -2,7 +2,7 @@
 
 export const CATEGORIES = ['history', 'settings', 'passwords', 'extensions', 'downloads'];
 export const MODES = ['hide', 'lockdown'];
-export const SCOPES = ['all', 'sites'];
+export const SCOPES = ['all', 'sites', 'except'];
 export const MAX_SITES = 200;
 
 export const DEFAULTS = Object.freeze({
@@ -15,9 +15,11 @@ export const DEFAULTS = Object.freeze({
   // 'hide' (default): each tab shows the lock page in place, so it keeps its container,
   // logins, group, pin and position. 'lockdown': close + encrypt + reopen (the Vault).
   mode: 'hide',
-  // Only for 'hide' mode: lock every tab, or only tabs on the listed sites.
+  // Only for 'hide' mode: lock every tab ('all'), only tabs on `sites` ('sites'), or every
+  // tab except those on `exceptSites` ('except'; those stay usable while locked).
   scope: 'all',
   sites: Object.freeze([]),
+  exceptSites: Object.freeze([]),
 });
 
 const clampInt = (v, lo, hi, d) => (Number.isInteger(v) && v >= lo && v <= hi ? v : d);
@@ -97,16 +99,22 @@ export function sanitize(input) {
   for (const c of CATEGORIES) {
     protect[c] = typeof i.protect?.[c] === 'boolean' ? i.protect[c] : DEFAULTS.protect[c];
   }
-  const sites = [];
-  if (Array.isArray(i.sites)) {
-    for (const s of i.sites) {
-      const r = parseSitePattern(s);
-      if (r.pattern && !sites.includes(r.pattern) && sites.length < MAX_SITES) sites.push(r.pattern);
+  const cleanList = (list) => {
+    const out = [];
+    if (Array.isArray(list)) {
+      for (const s of list) {
+        const r = parseSitePattern(s);
+        if (r.pattern && !out.includes(r.pattern) && out.length < MAX_SITES) out.push(r.pattern);
+      }
     }
-  }
+    return out;
+  };
+  const sites = cleanList(i.sites);
+  const exceptSites = cleanList(i.exceptSites);
   const mode = MODES.includes(i.mode) ? i.mode : DEFAULTS.mode;
   let scope = SCOPES.includes(i.scope) ? i.scope : DEFAULTS.scope;
   if (scope === 'sites' && sites.length === 0) scope = 'all'; // an empty list would lock nothing
+  if (scope === 'except' && exceptSites.length === 0) scope = 'all'; // nothing excepted = all tabs
   return {
     timeoutMin: clampInt(i.timeoutMin, 1, 240, DEFAULTS.timeoutMin),
     lockOnStartup: typeof i.lockOnStartup === 'boolean' ? i.lockOnStartup : DEFAULTS.lockOnStartup,
@@ -120,6 +128,7 @@ export function sanitize(input) {
     mode,
     scope,
     sites,
+    exceptSites,
   };
 }
 

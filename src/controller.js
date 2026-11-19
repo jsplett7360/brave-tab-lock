@@ -92,10 +92,13 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
   const isLockedPhase = (p) => p === 'locked' || p === 'locking';
   const lockMode = (ls) => (ls?.mode === 'hide' ? 'hide' : 'lockdown');
   const isSitesLock = (ls) => lockMode(ls) === 'hide' && ls.scope === 'sites';
-  const inLockScope = (ls, url) => !isSitesLock(ls) || matchesSite(url, ls.sites);
+  const isExceptLock = (ls) => lockMode(ls) === 'hide' && ls.scope === 'except';
+  /** Is this URL locked under the current lock? Except mode: everything but the listed sites. */
+  const inLockScope = (ls, url) => (isSitesLock(ls) ? matchesSite(url, ls.sites)
+    : isExceptLock(ls) ? !matchesSite(url, ls.exceptSites) : true);
   async function setPhase(ph, extra = {}) {
     const ls = await lockState();
-    const keep = ph === 'unlocked' ? {} : { reason: ls.reason, mode: ls.mode, scope: ls.scope, sites: ls.sites };
+    const keep = ph === 'unlocked' ? {} : { reason: ls.reason, mode: ls.mode, scope: ls.scope, sites: ls.sites, exceptSites: ls.exceptSites };
     await local.set({ lock: { ...keep, ...extra, phase: ph, since: now() } });
   }
 
@@ -209,10 +212,12 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
     }
     creatingLockPage = true;
     try {
-      if (isSitesLock(await lockState())) {
-        // Sites mode: the rest of the browser stays usable, so just add a tab.
+      const cur = await lockState();
+      if (isSitesLock(cur) || isExceptLock(cur)) {
+        // Sites / except mode: the rest of the browser stays usable, so just add a tab —
+        // in front only when the user asked for the lock page (sites mode's toolbar/shortcut).
         try {
-          const tab = await api.tabs.create({ url: lockUrl, active: true });
+          const tab = await api.tabs.create({ url: lockUrl, active: isSitesLock(cur) || !!focus });
           await session.set({ lockTabId: tab.id });
           return tab;
         } catch { /* no window to put it in — fall through */ }
@@ -299,7 +304,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
    * Private-window tabs in scope are closed and kept in memory only (as in Lockdown).
    */
   async function hideLock(reason, s) {
-    const info = { mode: 'hide', scope: s.scope, sites: s.scope === 'sites' ? s.sites : [] };
+    const info = { mode: 'hide', scope: s.scope, sites: s.scope === 'sites' ? s.sites : [], exceptSites: s.scope === 'except' ? s.exceptSites : [] };
     const ls = { phase: 'locking', ...info };
     await local.set({ lock: { ...ls, since: now(), reason } });
     let saveError = null;
@@ -500,8 +505,8 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
         if (!isOwnUrl(url) && inLockScope(ls, url)) toClose.push(t);
       } else if (map[t.id]) {
         await api.tabs.update(t.id, { url: H.hideUrl(lockUrl, map[t.id]), autoDiscardable: false }).catch(() => {});
-      } else if (sites) {
-        if (inLockScope(ls, url)) toHide.push(t);
+      } else if (sites || isExceptLock(ls)) {
+        if (inLockScope(ls, url)) toHide.push(t); // except mode: a tab that left an excepted site
       } else if (isOwnUrl(url) || (inStartup && worthSaving(url))) {
         toHide.push(t);
       } else {
@@ -968,6 +973,15 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
       await api.tabs.update(tab.id, { url: H.hideUrl(lockUrl, map[tab.id]), autoDiscardable: false }).catch(() => {});
       return;
     }
+    if (isExceptLock(ls)) {
+      // Excepted sites stay usable. Anything else — a new tab, or a tab that navigates or is
+      // redirected away from an excepted site — is hidden at once (private tabs: closed).
+      if (matchesSite(url, ls.exceptSites)) return;
+      if (tab.incognito) { await api.tabs.remove(tab.id).catch(() => {}); return; }
+      await serial(() => hideTabs([{ ...tab, url, pendingUrl: undefined }])).catch(() => {});
+      await serial(ensureLockPage).catch(() => {});
+      return;
+    }
     if (isSitesLock(ls)) {
       if (!matchesSite(url, ls.sites)) { if (!tab.incognito) await gate(tab, url, true); return; }
       if (tab.incognito) { await api.tabs.remove(tab.id).catch(() => {}); return; }
@@ -1323,7 +1337,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
       configured: !!rec,
       managed,
       lockMode: isLockedPhase(ls.phase) ? lockMode(ls) : s.mode,
-      lockScope: isLockedPhase(ls.phase) ? (isSitesLock(ls) ? 'sites' : 'all') : s.scope,
+      lockScope: isLockedPhase(ls.phase) ? (isSitesLock(ls) ? 'sites' : isExceptLock(ls) ? 'except' : 'all') : s.scope,
       recovery: await recoveryInfo(managed),
       failedTabs: (await getS('failedTabs')) || [],
       recoveryUsed: !!(await getS('recoveryUsed')),

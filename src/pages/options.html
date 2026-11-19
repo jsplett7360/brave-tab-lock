@@ -42,6 +42,11 @@
           <textarea id="sites" aria-label="Sites to lock, one per line" aria-describedby="sites-help sites-msg" spellcheck="false" placeholder="mail.proton.me&#10;*.bank.com"></textarea>
           <p id="sites-help" class="muted">One site per line. <code>mail.proton.me</code> means exactly that site; <code>*.bank.com</code> also covers bank.com and every address ending in .bank.com. While locked, other sites keep working, and any tab that opens a listed site is hidden at once.</p>
           <div id="sites-msg" class="msg error" role="status" aria-live="polite"></div>
+          <label class="check"><input type="radio" name="scope" id="scope-except" value="except"> All tabs except these sites</label>
+          <textarea id="except-sites" aria-label="Sites that stay usable while locked, one per line" aria-describedby="except-help except-warn except-msg" spellcheck="false" placeholder="music.youtube.com&#10;*.weather.gov"></textarea>
+          <p id="except-help" class="muted">Same format as above. While locked, tabs on these sites stay usable; every other tab is hidden. A new tab, or a tab that leaves one of these sites (a link, a redirect, a typed address), is hidden as soon as its new page loads, so that page can be visible for about a second.</p>
+          <p id="except-warn" class="warn hidden">These sites stay visible and usable to anyone at your computer while Tab Lock is locked.</p>
+          <div id="except-msg" class="msg error" role="status" aria-live="polite"></div>
           <p id="scope-lockdown-note" class="muted hidden">Lockdown mode (under Advanced) always locks all tabs.</p>
           <p class="muted">Tabs stay open behind the lock screen, so they keep their place<span class="brave-only"> and container</span> and you stay signed in. Their addresses and titles stay in each tab’s Back history and in the browser’s own files (Tab Lock can’t erase those). Pressing Back on a locked tab can show the page for a split second before Tab Lock hides it again. If a page has to reload when you unlock, unsaved input on it is lost; pages that ask “Leave site?” always reload.</p>
         </fieldset>
@@ -90,8 +95,8 @@
           <input id="cur" type="password" autocomplete="off" spellcheck="false" required>
           <label for="kind">New type</label>
           <select id="kind">
-            <option value="passphrase">Passphrase (stronger, at least 8 characters)</option>
-            <option value="pin">PIN (at least 6 digits)</option>
+            <option value="pin" selected>PIN (at least 6 digits, easier to remember)</option>
+            <option value="passphrase">Passphrase (at least 8 characters, stronger)</option>
           </select>
           <label for="next">New PIN or passphrase</label>
           <input id="next" type="password" autocomplete="new-password" spellcheck="false" required>

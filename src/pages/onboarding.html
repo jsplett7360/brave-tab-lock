@@ -13,12 +13,12 @@
 
     <section id="local-setup" class="panel hidden" aria-labelledby="local-title">
       <h2 class="first" id="local-title">1. Choose a PIN or passphrase</h2>
-      <p class="muted">A passphrase is much stronger. There are only a million 6-digit PINs, so someone who copies this profile’s files from your computer can try them all offline.</p>
+      <p class="muted">A PIN is easier to remember, so it’s the default. A passphrase is much stronger: there are only a million 6-digit PINs, so someone who copies this profile’s files from your computer can try them all offline. Whichever you choose, consider creating a recovery code in the next step.</p>
       <form id="local-form" autocomplete="off">
         <label for="kind">Type</label>
         <select id="kind">
-          <option value="passphrase">Passphrase (at least 8 characters)</option>
-          <option value="pin">PIN (at least 6 digits)</option>
+          <option value="pin" selected>PIN (at least 6 digits, easier to remember)</option>
+          <option value="passphrase">Passphrase (at least 8 characters, stronger)</option>
         </select>
         <label for="s1">PIN or passphrase</label>
         <input id="s1" type="password" autocomplete="new-password" spellcheck="false" required>

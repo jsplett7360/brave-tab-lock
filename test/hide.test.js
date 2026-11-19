@@ -475,3 +475,81 @@ test('placesToWindows: old records without a place reopen together; pinned first
   assert.deepEqual(w[0].groups, { 3: { title: 'T', color: 'red', collapsed: false } });
   assert.equal(w[0].tabs[2].group, '3');
 });
+
+test('except mode: excepted sites stay usable while locked; everything else hides; leaving an excepted site hides the tab at once', async () => {
+  const { c, f, msg } = await configured({ scope: 'except', exceptSites: ['music.example', '*.weather.example'] });
+  const wid = f.openWindow([{ url: 'https://music.example/play' }, { url: 'https://mail.example/inbox' }, { url: 'https://www.weather.example/today' }]);
+  const r0 = await c.lock('idle');
+  assert.equal(r0.ok, true);
+  assert.equal((await c.status()).lockScope, 'except');
+  assert.ok(byUrl(f, 'https://music.example/play'), 'excepted site untouched');
+  assert.ok(byUrl(f, 'https://www.weather.example/today'), 'wildcard excepted site untouched');
+  assert.equal(tokenTabs(f).length, 1, 'the other site is hidden');
+  // a link inside an excepted site stays usable
+  const music = byUrl(f, 'https://music.example/play');
+  await f.api.tabs.update(music.id, { url: 'https://music.example/album/2' });
+  await c.onTabUpdated(music.id, { url: 'https://music.example/album/2' }, await f.api.tabs.get(music.id));
+  assert.equal((await f.api.tabs.get(music.id)).url, 'https://music.example/album/2');
+  // navigating (or being redirected) away from an excepted site hides the tab immediately
+  await f.api.tabs.update(music.id, { url: 'https://bank.example/' });
+  await c.onTabUpdated(music.id, { url: 'https://bank.example/' }, await f.api.tabs.get(music.id));
+  assert.ok(tokenFromUrl((await f.api.tabs.get(music.id)).url, LOCK), 'left the excepted site → hidden');
+  // new tabs: on an excepted site fine; anything else (incl. a new tab page) hidden
+  const ok = await f.api.tabs.create({ windowId: wid, url: 'https://radar.weather.example/' });
+  await c.onTabCreated(ok);
+  assert.equal((await f.api.tabs.get(ok.id)).url, 'https://radar.weather.example/');
+  const ntp = await f.api.tabs.create({ windowId: wid, url: 'chrome://newtab/' });
+  await c.onTabCreated(ntp);
+  assert.ok(tokenFromUrl((await f.api.tabs.get(ntp.id)).url, LOCK), 'new tab page hidden');
+  const other = await f.api.tabs.create({ windowId: wid, url: 'https://news.example/' });
+  await c.onTabCreated(other);
+  assert.ok(tokenFromUrl((await f.api.tabs.get(other.id)).url, LOCK));
+  // protected browser pages are never excepted
+  const w = byUrl(f, 'https://www.weather.example/today');
+  await f.api.tabs.update(w.id, { url: 'chrome://history/' });
+  await c.onTabUpdated(w.id, { url: 'chrome://history/' }, await f.api.tabs.get(w.id));
+  assert.ok(tokenFromUrl((await f.api.tabs.get(w.id)).url, LOCK), 'history page hidden too');
+  // the safety net leaves excepted tabs alone
+  await c.onAlarm({ name: 'tablock-tick' });
+  assert.equal((await f.api.tabs.get(ok.id)).url, 'https://radar.weather.example/');
+  // unlock restores every hidden tab
+  const r = await msg({ type: 'unlock', secret: PIN });
+  assert.equal(r.ok, true);
+  for (const u of ['https://mail.example/inbox', 'https://bank.example/', 'https://news.example/', 'chrome://history/', 'https://radar.weather.example/']) {
+    assert.ok(byUrl(f, u), `${u} back`);
+  }
+  assert.equal(tokenTabs(f).length, 0);
+});
+
+test('except mode: private tabs on excepted sites stay open, others are closed and come back after unlock', async () => {
+  const { c, f, msg } = await configured({ scope: 'except', exceptSites: ['music.example'] }, { incognitoAllowed: true });
+  f.openWindow([{ url: 'https://a.example/' }]);
+  f.openWindow([{ url: 'https://music.example/' }, { url: 'https://secret.example/' }], { incognito: true });
+  await c.lock('idle');
+  const priv = f.allTabs().filter((t) => t.incognito).map((t) => t.url);
+  assert.deepEqual(priv, ['https://music.example/']);
+  assert.equal((await msg({ type: 'unlock', secret: PIN })).ok, true);
+  assert.ok(f.allTabs().some((t) => t.incognito && t.url === 'https://secret.example/'));
+});
+
+test('except mode settings: own list, same validation; empty list falls back to all tabs; sites list untouched', async () => {
+  const { sanitize } = await import('../src/settings.js');
+  const s = sanitize({ scope: 'except', exceptSites: ['https://Music.Example/x', '*.weather.example', 'bad url', 'music.example'], sites: ['a.example'] });
+  assert.equal(s.scope, 'except');
+  assert.deepEqual(s.exceptSites, ['music.example', '*.weather.example']);
+  assert.deepEqual(s.sites, ['a.example']);
+  assert.equal(sanitize({ scope: 'except', exceptSites: [] }).scope, 'all');
+  assert.equal(sanitize({ scope: 'nope' }).scope, 'all');
+  assert.deepEqual(sanitize({}).exceptSites, []);
+});
+
+test('PIN is the default credential type in setup, settings and recovery reset (passphrase still offered)', async () => {
+  const { readFileSync } = await import('node:fs');
+  for (const [page, id] of [['onboarding', 'kind'], ['options', 'kind'], ['lock', 'rc-kind']]) {
+    const html = readFileSync(new URL(`../src/pages/${page}.html`, import.meta.url), 'utf8');
+    const sel = html.slice(html.indexOf(`<select id="${id}">`), html.indexOf('</select>', html.indexOf(`<select id="${id}">`)));
+    const opts = [...sel.matchAll(/<option value="(\w+)"( selected)?/g)];
+    assert.deepEqual(opts.map((m) => m[1]), ['pin', 'passphrase'], page);
+    assert.equal(opts[0][2], ' selected', `${page}: PIN preselected`);
+  }
+});
