@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Lock",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Locks your browser behind a PIN and hides your open tabs. Everything stays on your device.",
   "minimum_chrome_version": "120",
   "permissions": ["storage", "tabs", "tabGroups", "idle", "alarms"],

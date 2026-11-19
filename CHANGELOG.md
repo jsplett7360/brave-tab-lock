@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.5 — 2026-11-19 (not yet uploaded; replaces 0.1.4)
+- **Locked windows no longer pop to the front.** While locked, Tab Lock's 30-second safety
+  check (and repeated idle or screen-lock events) focused the lock page's window, which
+  un-minimized it and brought the browser to the front about every 30 seconds. It now never
+  focuses, raises, un-minimizes or activates a window or tab on its own.
+- Lockdown mode opens its lock window unfocused and at normal size when it locks by itself
+  (inactivity, screen lock, browser not focused), behind whatever you're using. Locking by
+  hand (toolbar, shortcut or lock page) still brings the lock window forward, because your
+  windows have just closed.
+- Security unchanged: locked tabs still show only the lock screen; the safety check still
+  runs. No new permissions; no network code. Tests: 108 (6 new, recording every focus or
+  activate call).
+
 ## 0.1.4 — 2026-11-19 (not yet uploaded; replaces 0.1.3)
 After the 0.1.1 store rejection ("Restoring tabs from the vault" not reproducible), every
 store claim was re-run from the package in fresh Chrome and Brave profiles.

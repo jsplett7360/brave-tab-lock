@@ -20,10 +20,12 @@ https://chromewebstore.google.com/detail/mpggjibcbgbnmomcdknljmffhneojlpn).
   not reproducible". The exact reviewer steps are unknown. A simple lock/unlock of 0.1.1 in
   a fresh Chrome restores tabs; the likeliest failing path was lock → restart → unlock
   (Chrome doesn't restore the previous session by default).
-- 0.1.2 and 0.1.3 were never uploaded; **0.1.4 replaces them** (2026-11-19). Every claim
+- 0.1.2 and 0.1.3 were never uploaded; **0.1.4 replaces them** (2026-11-19), and **0.1.5**
+  (same description; locked windows no longer pop to the front) replaces 0.1.4 if it isn't
+  uploaded yet. Every claim
   in the description below was re-run from the package in fresh Chrome 157 and Brave 1.100
   profiles (Item 9 record in Life/PROGRESS.md). **Verified CRX Uploads is on**, so upload
-  `tab-lock-0.1.4.crx` from `./tools/pack-crx.sh`, not the zip, with the description below
+  `tab-lock-0.1.5.crx` from `./tools/pack-crx.sh`, not the zip, with the description below
   and `store/REVIEWER-TEST-INSTRUCTIONS.md` in the "Test instructions" field.
 
 ## Name
@@ -35,7 +37,7 @@ Locks your browser behind a PIN and hides your open tabs. Everything stays on yo
 ## Category / language
 Category: Privacy & Security (pick the closest available in the dashboard). Language: English.
 
-## Detailed description (0.1.4)
+## Detailed description (0.1.4 and 0.1.5)
 
 Tab Lock locks your browser behind a PIN or passphrase and hides your open tabs until you unlock it. It works in Chrome and other Chromium-based browsers.
 
@@ -68,7 +70,7 @@ Good to know
 Tab Lock adds a layer of privacy when your computer is already unlocked. It does not replace your computer's lock screen or disk encryption. A passphrase is stronger than a short PIN. If a page reloads when you unlock, unsaved form input on it is lost. Full details are in the project's README.
 
 ## Resubmission note (if the dashboard or an appeal asks what changed)
-0.1.1 was rejected because restoring tabs could not be reproduced. In 0.1.4, locking
+0.1.1 was rejected because restoring tabs could not be reproduced. Since 0.1.4, locking
 keeps tabs open behind a lock screen by default, and one correct PIN brings every tab
 back, including after a browser restart that did not restore them; the close-and-reopen
 behaviour is now the optional "Lockdown mode". Every feature in the description was

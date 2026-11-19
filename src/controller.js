@@ -187,15 +187,18 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
   }
 
   // ---- lock page -------------------------------------------------------------------
-  async function ensureLockPage() {
+  /**
+   * Make sure a lock page exists. Never focuses, raises or un-minimizes an existing window
+   * (this runs on the 30 s safety net and on repeated lock events). A lock window it has
+   * to create opens unfocused and at normal size, unless `focus` is set: only when the
+   * user locked by hand in Lockdown mode, whose windows have just closed.
+   */
+  async function ensureLockPage({ focus = false } = {}) {
     const id = await getS('lockTabId');
     if (Number.isInteger(id)) {
       try {
         const t = await api.tabs.get(id);
-        if (isLockUrl(t.pendingUrl || t.url) && !t.incognito) {
-          await api.windows.update(t.windowId, { focused: true }).catch(() => {});
-          return t;
-        }
+        if (isLockUrl(t.pendingUrl || t.url) && !t.incognito) return t;
       } catch { /* gone */ }
     }
     const all = await api.tabs.query({});
@@ -214,7 +217,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
           return tab;
         } catch { /* no window to put it in — fall through */ }
       }
-      const win = await api.windows.create({ url: lockUrl, focused: true, type: 'normal', state: 'maximized' });
+      const win = await api.windows.create({ url: lockUrl, focused: !!focus, type: 'normal', ...(focus ? { state: 'maximized' } : {}) });
       const tab = win.tabs?.[0];
       if (tab) await session.set({ lockTabId: tab.id });
       return tab;
@@ -279,7 +282,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
     } catch (e) {
       saveError = String(e?.message || e);
     }
-    const lockTab = await ensureLockPage();
+    const lockTab = await ensureLockPage({ focus: SHOW_LOCK_REASONS.has(reason) });
     if (saveError) {
       // Never close tabs we failed to save. The lock page still covers the browser.
       await local.set({ lock: { phase: 'locked', since: now(), reason, mode: 'lockdown' }, notice: 'save-failed' });
