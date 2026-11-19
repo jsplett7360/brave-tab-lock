@@ -1,4 +1,6 @@
-import { send, $, show, setMsg, failureText, configureSecretInput, showRecoveryCode, RECOVERY_PANEL_HTML, RECOVERY_TEXT } from './common.js';
+import { send, $, applyBrowserText, show, setMsg, failureText, configureSecretInput, showRecoveryCode, RECOVERY_PANEL_HTML, RECOVERY_TEXT } from './common.js';
+
+applyBrowserText();
 
 $('code-panel').innerHTML = RECOVERY_PANEL_HTML; // static markup, no data
 $('rc-skip-text').textContent = RECOVERY_TEXT.skip;

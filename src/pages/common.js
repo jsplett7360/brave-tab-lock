@@ -7,6 +7,22 @@ export function send(msg) {
 
 export const $ = (id) => document.getElementById(id);
 
+/** Brave (navigator.brave exists there) or another Chromium browser such as Chrome. */
+export const IS_BRAVE = typeof navigator !== 'undefined' && (!!navigator.brave
+  || !!navigator.userAgentData?.brands?.some((b) => /brave/i.test(b.brand)));
+
+/**
+ * Make page text match the browser it runs in: `<code data-url>` gets the right scheme
+ * (brave:// or chrome://), `[data-b]/[data-c]` pick Brave or other wording, and
+ * `.brave-only` parts are hidden elsewhere.
+ */
+export function applyBrowserText(root = document) {
+  const scheme = IS_BRAVE ? 'brave' : 'chrome';
+  for (const el of root.querySelectorAll('[data-url]')) el.textContent = el.textContent.replace(/^(brave|chrome):\/\//, `${scheme}://`);
+  for (const el of root.querySelectorAll('[data-b]')) el.textContent = IS_BRAVE ? el.dataset.b : el.dataset.c;
+  for (const el of root.querySelectorAll('.brave-only')) el.classList.toggle('hidden', !IS_BRAVE);
+}
+
 export function show(el, on = true) {
   el.classList.toggle('hidden', !on);
 }

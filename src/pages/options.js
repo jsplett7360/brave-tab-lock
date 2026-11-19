@@ -1,5 +1,7 @@
-import { send, $, show, setMsg, failureText, configureSecretInput, showRecoveryCode, RECOVERY_PANEL_HTML } from './common.js';
+import { send, $, applyBrowserText, show, setMsg, failureText, configureSecretInput, showRecoveryCode, RECOVERY_PANEL_HTML } from './common.js';
 import { parseSiteList } from '../settings.js';
+
+applyBrowserText();
 
 $('code-panel').innerHTML = RECOVERY_PANEL_HTML; // static markup, no data
 

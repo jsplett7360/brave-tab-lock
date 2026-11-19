@@ -1,5 +1,7 @@
-import { send, $, show, setMsg, failureText, configureSecretInput, backoffCountdown, CATEGORY_LABELS,
+import { send, $, applyBrowserText, show, setMsg, failureText, configureSecretInput, backoffCountdown, CATEGORY_LABELS,
   showRecoveryCode, RECOVERY_PANEL_HTML } from './common.js';
+
+applyBrowserText();
 
 const params = new URLSearchParams(location.search);
 const gateToken = params.get('gate');
@@ -88,7 +90,7 @@ function renderProblems(lastResult) {
   const parts = [];
   const failed = lastResult?.failedTabs || st.failedTabs || [];
   if (st.notice === 'restore-failed' || (st.savedChunks > 0 && st.oldChunks === 0 && st.lostChunks === 0)) {
-    parts.push(`${st.savedTabs} saved tab(s) are still in the vault. Enter your ${word()} and choose Retry restore.`);
+    parts.push(`${st.savedTabs} saved tab(s) are still waiting to be reopened. Enter your ${word()} and choose Retry restore.`);
   }
   if (st.oldChunks > 0) parts.push(`Your ${word()} was changed by the installer. Tabs saved or hidden before the change need the previous ${word()}.`);
   if (st.lostChunks > 0) parts.push('Some saved tabs were locked with a temporary key that was lost when the browser restarted. They cannot be recovered.');

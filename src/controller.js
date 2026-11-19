@@ -353,14 +353,16 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
   async function hideTabs(list) {
     if (!list.length) return 0;
     const gates = (await getS('gates')) || {};
+    const { groups, wins } = await placeInfo(list);
     const entries = {};
     const plan = [];
     for (const t of list) {
       const url = tabUrl(t);
       const g = gates[gateTokenOf(url)];
       const token = H.newToken(C.randomBytes);
-      // A PIN prompt for a protected page: remember the page it protects.
-      entries[token] = { url: g ? g.url : url, title: g ? '' : (t.title || '') };
+      // A PIN prompt for a protected page: remember the page it protects. `at` lets a tab
+      // the browser drops (restart without session restore) come back in place.
+      entries[token] = { url: g ? g.url : url, title: g ? '' : (t.title || ''), at: H.tabPlace(t, groups, wins) };
       plan.push({ id: t.id, token });
     }
     await appendHiddenChunk(entries);
@@ -373,6 +375,19 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
     for (const p of plan) await api.tabs.update(p.id, { url: H.hideUrl(lockUrl, p.token), autoDiscardable: false }).catch(() => {});
     await settleHidden(plan);
     return plan.length;
+  }
+
+  /** Group and window details for the tabs being hidden (best effort; layout is cosmetic). */
+  async function placeInfo(list) {
+    const groups = {};
+    const wins = {};
+    for (const gid of new Set(list.map((t) => t.groupId).filter((g) => Number.isInteger(g) && g >= 0))) {
+      try { groups[gid] = await api.tabGroups.get(gid); } catch { /* ungrouped on reopen */ }
+    }
+    for (const wid of new Set(list.map((t) => t.windowId).filter(Number.isInteger))) {
+      try { wins[wid] = await api.windows.get(wid); } catch { /* default window size on reopen */ }
+    }
+    return { groups, wins };
   }
 
   async function settleHidden(plan) {
@@ -535,12 +550,14 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
 
   /**
    * Default mode: put every hidden tab back on its page, in the same tab (so it keeps its
-   * container and logins). Chunks are deleted after; tokens whose tab no longer exists
-   * (closed while locked, or not restored after a restart) are kept, re-sealed as an
-   * "orphan" chunk, and offered as "Reopen N tabs" / "Discard".
+   * container and logins). Tabs that no longer exist (the browser didn't restore them
+   * after a restart, or they were closed while locked) are reopened right away with the
+   * same PIN, in their window, pin and group. Only if reopening a window fails are its
+   * tabs kept, re-sealed as an "orphan" chunk, and offered as "Reopen N tabs" / "Discard".
+   * Chunks are deleted after.
    */
   async function revealAll(keys) {
-    const res = { revealedTabs: 0, failedTabs: [], errors: [], orphanTabs: 0 };
+    const res = { revealedTabs: 0, reopenedTabs: 0, failedTabs: [], errors: [], orphanTabs: 0 };
     const list = (await getL('hidden')) || [];
     if (!list.length) return res;
     const entries = {};
@@ -577,10 +594,23 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
       if (found.has(tok) || !worthSaving(e.url) || openNow.has(e.url)) continue;
       orphans[tok] = e;
     }
+    const unopened = {};
+    if (Object.keys(orphans).length) {
+      for (const w of H.placesToWindows(orphans)) {
+        try {
+          const r = await restoreWindows(api, [w]);
+          res.reopenedTabs += w.tabs.length - r.failedTabs.length;
+          res.failedTabs.push(...r.failedTabs);
+        } catch (e) {
+          for (const t of w.tabs) unopened[t.token] = orphans[t.token];
+          res.errors.push(String(e?.message || e));
+        }
+      }
+    }
     const next = [...keep];
-    const n = Object.keys(orphans).length;
+    const n = Object.keys(unopened).length;
     if (n) {
-      next.push({ ...(await C.sealFor({ tabs: orphans }, await sealingRecipients())), at: now(), toks: Object.keys(orphans), orphan: true });
+      next.push({ ...(await C.sealFor({ tabs: unopened }, await sealingRecipients())), at: now(), toks: Object.keys(unopened), orphan: true });
       res.orphanTabs = n;
     }
     await (next.length ? local.set({ hidden: next }) : local.remove('hidden'));
@@ -645,7 +675,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
     else await session.remove('failedTabs');
     if (await getL('updatePending')) schedule(() => serial(maybeApplyUpdate).catch(() => {}), APPLY_UPDATE_DELAY_MS);
     if (mode === 'hide') {
-      await tidyPlainLockPages(problem);
+      await tidyPlainLockPages(problem, (result.reopenedTabs || 0) > 0);
     } else {
       const lockTabId = await getS('lockTabId');
       if (!problem && Number.isInteger(lockTabId)) {
@@ -658,6 +688,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
       ok: true,
       restoredWindows: result.restoredWindows || 0,
       revealedTabs: result.revealedTabs || 0,
+      reopenedTabs: result.reopenedTabs || 0,
       failedTabs: result.failedTabs,
       restoreErrors: result.errors.length,
       ...pending,
@@ -670,7 +701,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
    * attention, then one stays (or opens) to show it, because the tab the PIN was typed in
    * has already gone back to its page.
    */
-  async function tidyPlainLockPages(problem) {
+  async function tidyPlainLockPages(problem, reopened = false) {
     const all = await api.tabs.query({});
     const plain = all.filter((t) => !t.incognito && isPlainLockUrl(tabUrl(t)));
     if (problem) {
@@ -685,7 +716,9 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
     }
     for (const t of plain) {
       const others = all.some((o) => o.windowId === t.windowId && o.id !== t.id);
-      if (others) await api.tabs.remove(t.id).catch(() => {});
+      // After a restart the lock page may sit alone in the browser's startup window; once
+      // the tabs were reopened in their own windows, that window can go (as in Lockdown).
+      if (others || reopened) await api.tabs.remove(t.id).catch(() => {});
       else await api.tabs.update(t.id, { url: 'chrome://newtab/' }).catch(() => {});
     }
     await session.remove(['lockTabId']);
@@ -699,6 +732,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
     return finishUnlock({
       restoredWindows: res.restoredWindows,
       revealedTabs: hid.revealedTabs,
+      reopenedTabs: hid.reopenedTabs,
       failedTabs: [...hid.failedTabs, ...res.failedTabs],
       errors: [...hid.errors, ...res.errors],
     }, mode);
@@ -753,7 +787,7 @@ export function createController(api, { now = () => Date.now(), schedule = (fn, 
       for (const kid of Object.keys(keys)) if (!errors.length) delete oldKeys[kid];
       await local.set({ oldKeys });
       await pruneOldKeys();
-      return finishUnlock({ ...result, revealedTabs: hid.revealedTabs, failedTabs: [...hid.failedTabs, ...result.failedTabs], errors },
+      return finishUnlock({ ...result, revealedTabs: hid.revealedTabs, reopenedTabs: hid.reopenedTabs, failedTabs: [...hid.failedTabs, ...result.failedTabs], errors },
         isLockedPhase(ls.phase) ? lockMode(ls) : 'hide');
     });
   }

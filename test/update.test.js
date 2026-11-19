@@ -107,6 +107,7 @@ test('never while anything is held: Lockdown vault, private tabs in memory, orph
     f.openWindow([{ url: 'https://gone.example/' }, { url: 'https://stay.example/' }]);
     await c.lock();
     await f.api.tabs.remove(tokenTabs(f)[0].id);
+    f.failNextWindowCreates(2); // reopening fails → kept for Reopen/Discard
     await msg({ type: 'unlock', secret: PIN });
     await c.onUpdateAvailable({});
     assert.equal(await c._internal.updateBlocker(), 'hidden-tabs');

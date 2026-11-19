@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.4 — 2026-11-19 (not yet uploaded; replaces 0.1.3)
+After the 0.1.1 store rejection ("Restoring tabs from the vault" not reproducible), every
+store claim was re-run from the package in fresh Chrome and Brave profiles.
+- **One unlock brings everything back after a restart.** If the browser didn't restore
+  the hidden tabs (Chrome's default for a new profile is "Open the New Tab page"), the
+  same correct PIN now reopens them right away, in their own windows, pinned state and
+  groups (name and color). Before, it took a second PIN entry and reopened them as loose
+  tabs in one window. To do this, each hidden tab's window, position, pin and group are
+  saved with it (encrypted, like its address). Records from 0.1.2/0.1.3 reopen as before,
+  together in one window. "Reopen N tabs" / "Discard" remains only for tabs whose window
+  couldn't be reopened.
+- **Text fits the browser in use.** Setup, settings and lock pages no longer say "Brave",
+  `brave://` or "your Mac … FileVault" in Chrome: they show `chrome://` or `brave://` as
+  appropriate, "Allow in Incognito" or "Allow in Private", and Brave-only notes
+  (Containers, Tor windows, the macOS installer) only in Brave.
+- The word "vault" is gone from the lock page and the README ("saved tabs").
+- No new permissions; no network code. Tests: 102.
+
 ## 0.1.3 — 2026-11-15 (not yet uploaded; replaces 0.1.2)
 - **Safe updates while locked.** Hidden tabs are kept from being auto-discarded, so a
   Tab Lock page stays open and Brave holds updates back while anything is hidden. A

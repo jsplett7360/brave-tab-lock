@@ -113,13 +113,14 @@ Known limits. These are real, not just legal boilerplate:
 | --- | --- | --- |
 | On lock | each tab is navigated to `lock.html#<random token>` in the same tab | tabs are encrypted, saved and closed; one lock page stays |
 | On unlock | each tab goes Back to its page (or, if Back isn't possible, opens the saved address) | windows, tabs, pins and groups are recreated |
+| Tabs the browser didn't restore after a restart (e.g. Chrome's default "Open the New Tab page") | reopened by the same unlock, in their windows, pinned state and groups (outside any container) | same as above |
 | Brave Containers, logins | kept | lost (new tabs are outside the container) |
 | Page addresses in the tab's Back history / Brave's session files | yes | no |
 | "Only these sites" | available | always all tabs |
 
 The lock page's address contains only a random 128-bit token; the address and title of
-the page it replaced are kept encrypted by Tab Lock (same envelope encryption as the
-Vault, below).
+the page it replaced are kept encrypted by Tab Lock (same envelope encryption as
+Lockdown mode's saved tabs, below).
 
 ## Recovery code
 
@@ -191,7 +192,7 @@ twice.
 **Crypto.**
 - **PIN check:** PBKDF2-SHA-256, a random 16-byte salt, 600,000 iterations (the OWASP
   recommendation), and a constant-time compare.
-- **Vault:** each profile has an RSA-OAEP-3072 key pair. The private key is encrypted
+- **Saved and hidden tabs:** each profile has an RSA-OAEP-3072 key pair. The private key is encrypted
   with AES-GCM-256 under a second PBKDF2 key (separate salt) derived from your PIN.
   Locking happens while you're away, so Tab Lock doesn't know the PIN then. Each lock
   instead encrypts the tab list with a fresh AES-GCM-256 key and a fresh 12-byte IV,
@@ -202,8 +203,8 @@ twice.
 
 | Where | What | Encrypted? |
 | --- | --- | --- |
-| `chrome.storage.local` (disk) | PIN check record (salt + PBKDF2 hash), key pair (private half encrypted), recovery-code record (salt + hash + private key encrypted under the code), settings, wrong-attempt counter, lock state, **hidden tabs' addresses and titles** (default mode), **vault for normal windows** (Lockdown mode) | Hidden-tab list, vault and private key: yes. Others are not secret (the hidden-tab tokens are random). |
-| `chrome.storage.session` (memory only, cleared when Brave quits) | **Vault for private windows**, tab ↔ token map, short-lived grants for protected pages and settings | Vault: yes |
+| `chrome.storage.local` (disk) | PIN check record (salt + PBKDF2 hash), key pair (private half encrypted), recovery-code record (salt + hash + private key encrypted under the code), settings, wrong-attempt counter, lock state, **hidden tabs' addresses and titles** (default mode), **saved tabs of normal windows** (Lockdown mode) | Hidden-tab list, saved tabs and private key: yes. Others are not secret (the hidden-tab tokens are random). |
+| `chrome.storage.session` (memory only, cleared when Brave quits) | **Saved private-window tabs**, tab ↔ token map, short-lived grants for protected pages and settings | Saved tabs: yes |
 | `chrome.storage.managed` (read-only, from macOS policy) | Master PIN check record | n/a (salted hash) |
 
 Private-window tabs are **never written to disk**. This was checked in Brave by searching
@@ -223,7 +224,7 @@ whichever comes first. The shortest timeout is 1 minute.
 
 | Permission | Why |
 | --- | --- |
-| `storage` | Keep the PIN check record, settings and the encrypted vault on this device. |
+| `storage` | Keep the PIN check record, settings and the encrypted tab list on this device. |
 | `tabs` | Read tab addresses/titles to save them on lock; show the lock screen in each tab and send it Back to its page on unlock (Lockdown mode: close and reopen them); see when a protected page (e.g. `brave://settings`) is opened so it can be redirected to the PIN prompt. |
 | `tabGroups` | Save and restore tab group names, colours and collapsed state. |
 | `idle` | Lock after the computer has been idle for your chosen time, or immediately when the screen locks. |

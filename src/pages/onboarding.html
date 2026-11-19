@@ -9,11 +9,11 @@
 <body>
   <main>
     <h1>Set up Tab Lock</h1>
-    <p>Tab Lock locks this browser profile behind a PIN after inactivity, when Brave starts, or when you press the shortcut. While it is locked, each tab shows a lock screen instead of its page; unlocking puts every tab back on its page, so you stay signed in and Brave Containers keep working.</p>
+    <p>Tab Lock locks this browser profile behind a PIN after inactivity, when the browser starts, or when you press the shortcut. While it is locked, each tab shows a lock screen instead of its page; unlocking puts every tab back on its page, so you stay signed in<span class="brave-only"> and Brave Containers keep working</span>.</p>
 
     <section id="local-setup" class="panel hidden" aria-labelledby="local-title">
       <h2 class="first" id="local-title">1. Choose a PIN or passphrase</h2>
-      <p class="muted">A passphrase is much stronger. There are only a million 6-digit PINs, so someone who copies this profile’s files from your Mac can try them all offline.</p>
+      <p class="muted">A passphrase is much stronger. There are only a million 6-digit PINs, so someone who copies this profile’s files from your computer can try them all offline.</p>
       <form id="local-form" autocomplete="off">
         <label for="kind">Type</label>
         <select id="kind">
@@ -60,24 +60,24 @@
 
     <section id="done" class="panel hidden" aria-labelledby="done-title">
       <h2 class="first" id="done-title">Tab Lock is on</h2>
-      <p>By default it locks after 5 minutes of inactivity, whenever Brave starts, and when you press <kbd>Control</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> or click the toolbar button. Change this in <a href="options.html">settings</a>.</p>
+      <p>By default it locks after 5 minutes of inactivity, whenever the browser starts, and when you press <kbd>Control</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> or click the toolbar button. Change this in <a href="options.html">settings</a>.</p>
     </section>
 
     <section class="panel gap" aria-labelledby="next-title">
       <h2 class="first" id="next-title">Recommended next steps</h2>
       <ul>
-        <li><strong>Private windows:</strong> open <code>brave://extensions</code>, choose Tab Lock → Details, and turn on “Allow in Private”. <span id="incog-status"></span></li>
-        <li><strong>Address bar suggestions:</strong> the address bar can still suggest sites from your history. <span id="omnibox-help">To turn that off, open <code>brave://settings/appearance</code> and turn off “Show autocomplete suggestions in address bar”.</span></li>
-        <li><strong>Other profiles:</strong> each Brave profile has its own Tab Lock with its own PIN, unless the macOS installer set a master PIN.</li>
+        <li><strong>Private windows:</strong> open <code data-url>brave://extensions</code>, choose Tab Lock → Details, and turn on “<span data-b="Allow in Private" data-c="Allow in Incognito">Allow in Private</span>”. <span id="incog-status"></span></li>
+        <li><strong>Address bar suggestions:</strong> the address bar can still suggest sites from your history. <span id="omnibox-help" class="brave-only">To turn that off, open <code data-url>brave://settings/appearance</code> and turn off “Show autocomplete suggestions in address bar”.</span></li>
+        <li><strong>Other profiles:</strong> each browser profile has its own Tab Lock with its own PIN<span class="brave-only">, unless the macOS installer set a master PIN</span>.</li>
       </ul>
       <h2>What Tab Lock can’t do</h2>
       <ul class="muted">
-        <li>It is a convenience layer. Your Mac’s lock screen and FileVault are the real protection.</li>
+        <li>It is a convenience layer. Your computer’s lock screen and disk encryption are the real protection.</li>
         <li>Anyone who can read this profile’s files can try PINs offline; a 6-digit PIN falls quickly. Use a passphrase.</li>
-        <li>Tab titles and addresses may already be stored in Brave’s history and session files on disk. Hidden tabs also keep their pages in their Back history, and pressing Back on a locked tab can show the page for a split second.</li>
-        <li>Someone can open a different Brave profile, make a new one, or use another browser.</li>
+        <li>Tab titles and addresses may already be stored in the browser’s history and session files on disk. Hidden tabs also keep their pages in their Back history, and pressing Back on a locked tab can show the page for a split second.</li>
+        <li>Someone can open a different browser profile, make a new one, or use another browser.</li>
         <li>If a page has to reload when you unlock, anything typed but not submitted on it is lost. (Lockdown mode, under Settings → Advanced, always closes tabs.)</li>
-        <li>Without the macOS installer, Tab Lock can be removed from Brave’s toolbar menu.</li>
+        <li>Tab Lock can be removed from the browser’s extensions menu<span class="brave-only"> unless the macOS installer added it</span>.</li>
       </ul>
     </section>
   </main>

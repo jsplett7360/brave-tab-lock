@@ -125,7 +125,7 @@ test('while locked (all tabs): new tabs/windows and brave:// pages are closed; P
   assert.ok(tokenFromUrl(f.allTabs()[0].url, LOCK));
 });
 
-test('closing every hidden tab while locked opens a PIN prompt; the closed tab is offered back (D4)', async () => {
+test('closing every hidden tab while locked opens a PIN prompt; unlock reopens the closed tab with the same PIN', async () => {
   const { c, f, msg } = await configured();
   f.openWindow([{ url: 'https://closed.example/' }]);
   await c.lock();
@@ -135,15 +135,65 @@ test('closing every hidden tab while locked opens a PIN prompt; the closed tab i
   assert.deepEqual(f.allTabs().map((x) => x.url), [LOCK]);
   const r = await msg({ type: 'unlock', secret: PIN });
   assert.equal(r.ok, true);
+  assert.equal(r.reopenedTabs, 1);
+  assert.equal(r.orphanTabs, 0);
+  assert.ok(byUrl(f, 'https://closed.example/'));
+  assert.equal((await c.status()).orphanTabs, 0);
+  assert.equal(f.api.storage.local._dump().hidden, undefined);
+});
+
+test('if a dropped tab\'s window can\'t be reopened, it is kept and offered back (D4 fallback)', async () => {
+  const { c, f, msg } = await configured();
+  f.openWindow([{ url: 'https://closed.example/' }]);
+  await c.lock();
+  const t = tokenTabs(f)[0];
+  await f.api.tabs.remove(t.id);
+  await c.onTabRemoved(t.id, { isWindowClosing: false });
+  f.failNextWindowCreates(2);
+  const r = await msg({ type: 'unlock', secret: PIN });
+  assert.equal(r.ok, true);
   assert.equal(r.orphanTabs, 1);
   assert.ok(byUrl(f, LOCK), 'a status page stays open to show it');
-  const st = await c.status();
-  assert.equal(st.orphanTabs, 1);
   const ro = await msg({ type: 'reopenHidden', secret: PIN });
   assert.equal(ro.ok, true);
   assert.equal(ro.reopened, 1);
   assert.ok(byUrl(f, 'https://closed.example/'));
   assert.equal((await c.status()).orphanTabs, 0);
+});
+
+test('restart without session restore: one unlock reopens every hidden tab in its window, pin and group', async () => {
+  const { c, f, clock, msg } = await configured();
+  f.openWindow([{ url: 'https://pin.example/', pinned: true }, { url: 'https://g1.example/', group: 'g' }, { url: 'https://g2.example/', group: 'g' }],
+    { groupDefs: { g: { title: 'Work', color: 'blue' } } });
+  f.openWindow([{ url: 'https://other.example/' }]);
+  await c.lock();
+  assert.equal(tokenTabs(f).length, 4);
+  // the browser restarts and opens only a new tab page (Chrome's default for a new profile)
+  for (const w of await f.api.windows.getAll()) await f.api.windows.remove(w.id);
+  f.api.storage.session._replace({});
+  f.openWindow([{ url: 'chrome://newtab/' }]);
+  const c2 = createController(f.api, { ...clock, sleep: async () => {} });
+  await c2.init();
+  await c2.onStartup();
+  assert.equal((await c2.status()).phase, 'locked');
+  const r = await c2.onMessage({ type: 'unlock', secret: PIN }, f.sender());
+  assert.equal(r.ok, true);
+  assert.equal(r.reopenedTabs, 4);
+  assert.equal(r.orphanTabs, 0, 'no second PIN needed');
+  const wins = await f.api.windows.getAll({ populate: true });
+  const win1 = wins.find((w) => w.tabs.some((t) => t.url === 'https://pin.example/'));
+  assert.deepEqual(win1.tabs.map((t) => t.url), ['https://pin.example/', 'https://g1.example/', 'https://g2.example/']);
+  assert.equal(win1.tabs[0].pinned, true);
+  const gid = win1.tabs[1].groupId;
+  assert.ok(gid >= 0 && win1.tabs[2].groupId === gid);
+  const g = await f.api.tabGroups.get(gid);
+  assert.deepEqual({ title: g.title, color: g.color }, { title: 'Work', color: 'blue' });
+  const win2 = wins.find((w) => w.tabs.some((t) => t.url === 'https://other.example/'));
+  assert.notEqual(win1.id, win2.id, 'separate windows kept');
+  assert.equal(wins.length, 2, 'the startup window holding only the lock page is closed');
+  assert.equal(f.api.storage.local._dump().hidden, undefined);
+  const disk = JSON.stringify(f.api.storage.local._dump());
+  for (const secret of ['pin.example', 'Work']) assert.ok(!disk.includes(secret), `${secret} on disk`);
 });
 
 test('D4 discard: orphaned hidden tabs can be discarded with the PIN', async () => {
@@ -152,6 +202,7 @@ test('D4 discard: orphaned hidden tabs can be discarded with the PIN', async () 
   await c.lock();
   const gone = tokenTabs(f)[0];
   await f.api.tabs.remove(gone.id);
+  f.failNextWindowCreates(2); // reopening fails → kept for Reopen/Discard
   await msg({ type: 'unlock', secret: PIN });
   assert.equal((await c.status()).orphanTabs, 1);
   assert.equal((await msg({ type: 'discardHidden', secret: '000000' })).error, 'wrong');
@@ -405,4 +456,22 @@ test('migration: a browser locked by 0.1.1 (Vault, no mode, old settings) unlock
   assert.equal((await c2.status()).lockMode, 'hide', 'next lock uses the new default (D5)');
   await c2.lock();
   assert.equal(tokenTabs(a.f).length, 2);
+});
+
+test('placesToWindows: old records without a place reopen together; pinned first, order kept', async () => {
+  const { placesToWindows, tabPlace } = await import('../src/hide.js');
+  const legacy = placesToWindows({ a: { url: 'https://a/' }, b: { url: 'https://b/' } });
+  assert.equal(legacy.length, 1);
+  assert.deepEqual(legacy[0].tabs.map((t) => [t.url, t.token]), [['https://a/', 'a'], ['https://b/', 'b']]);
+  const at = (o) => tabPlace({ windowId: 7, ...o }, { 3: { title: 'T', color: 'red' } }, { 7: { state: 'normal', left: 1, top: 2, width: 300, height: 400 } });
+  const w = placesToWindows({
+    x: { url: 'https://x/', at: at({ index: 2, groupId: 3 }) },
+    y: { url: 'https://y/', at: at({ index: 0, pinned: true }) },
+    z: { url: 'https://z/', at: at({ index: 1 }) },
+  });
+  assert.equal(w.length, 1);
+  assert.deepEqual(w[0].tabs.map((t) => t.url), ['https://y/', 'https://z/', 'https://x/']);
+  assert.deepEqual(w[0].bounds, { left: 1, top: 2, width: 300, height: 400 });
+  assert.deepEqual(w[0].groups, { 3: { title: 'T', color: 'red', collapsed: false } });
+  assert.equal(w[0].tabs[2].group, '3');
 });

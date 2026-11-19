@@ -15,14 +15,16 @@ https://chromewebstore.google.com/detail/mpggjibcbgbnmomcdknljmffhneojlpn).
   manipulation, disruptive notifications, and messages sent without consent
   ([troubleshooting](https://developer.chrome.com/docs/webstore/troubleshooting/)).
 - The user submitted the plain description below and **appealed**. The outcome is pending.
-- 0.1.1 and 0.1.2 were never uploaded; **0.1.3 replaces them** (built 2026-11-15, not
-  uploaded yet; its store text is the same as 0.1.2's).
-  **Verified CRX Uploads is on** (opted in 2026-11-15), so it must be uploaded as
-  `tab-lock-0.1.3.crx` from `./tools/pack-crx.sh`, not the zip.
-- **0.1.2 changes the detailed description** (only the facts that changed: how tabs are
-  hidden, sites mode, recovery code). Paste the updated text below when you upload 0.1.3.
-  Whether a description edit alone starts a new review isn't something Chrome's docs say;
-  doing it together with the 0.1.3 upload means one review either way.
+- **0.1.1 was uploaded and rejected** (reported 2026-11-19, "Red Potassium", Content
+  Policies / misleading functionality): "Restoring tabs from the vault" was "not working or
+  not reproducible". The exact reviewer steps are unknown. A simple lock/unlock of 0.1.1 in
+  a fresh Chrome restores tabs; the likeliest failing path was lock → restart → unlock
+  (Chrome doesn't restore the previous session by default).
+- 0.1.2 and 0.1.3 were never uploaded; **0.1.4 replaces them** (2026-11-19). Every claim
+  in the description below was re-run from the package in fresh Chrome 157 and Brave 1.100
+  profiles (Item 9 record in Life/PROGRESS.md). **Verified CRX Uploads is on**, so upload
+  `tab-lock-0.1.4.crx` from `./tools/pack-crx.sh`, not the zip, with the description below
+  and `store/REVIEWER-TEST-INSTRUCTIONS.md` in the "Test instructions" field.
 
 ## Name
 Tab Lock
@@ -33,7 +35,7 @@ Locks your browser behind a PIN and hides your open tabs. Everything stays on yo
 ## Category / language
 Category: Privacy & Security (pick the closest available in the dashboard). Language: English.
 
-## Detailed description (0.1.2; the 2026-11-15 appeal text with only the changed facts updated)
+## Detailed description (0.1.4)
 
 Tab Lock locks your browser behind a PIN or passphrase and hides your open tabs until you unlock it. It works in Chrome and other Chromium-based browsers.
 
@@ -43,12 +45,13 @@ Features
 
 - Locks automatically after a period of inactivity you choose (default 5 minutes), when your screen locks, and when the browser starts.
 - Lock instantly with a keyboard shortcut (Control+Shift+L on Mac, Ctrl+Shift+L elsewhere) or the toolbar button.
-- While locked, each open tab shows a lock screen instead of its page. Unlocking returns every tab to its page, so you stay signed in. An optional Lockdown mode closes and encrypts tabs instead.
+- While locked, each open tab shows a lock screen instead of its page. Unlocking returns every tab to its page, so you stay signed in. If the browser did not reopen your tabs after a restart, unlocking reopens them in their windows, with pinned tabs and tab groups.
+- Optional Lockdown mode closes and encrypts your tabs while locked, and reopens your windows, tabs, pinned tabs and tab groups when you unlock.
 - Optional: lock only the sites you choose.
 - Optional recovery code to reset a forgotten PIN, kept on your device.
 - History, Settings, Passwords, Extensions and Downloads pages can require your PIN even while unlocked. Each can be turned on or off.
-- After several wrong attempts, each new attempt must wait longer.
-- Works in private windows if you allow it. Private-window tabs are kept in memory only and never written to disk.
+- After 5 wrong attempts you must wait before trying again, and the wait grows with more wrong attempts.
+- Works in private windows if you allow it. Private-window tabs are kept in memory only and never written to disk. They are closed while locked and reopened in a private window when you unlock.
 
 How your data is handled
 
@@ -63,6 +66,14 @@ Permissions
 Good to know
 
 Tab Lock adds a layer of privacy when your computer is already unlocked. It does not replace your computer's lock screen or disk encryption. A passphrase is stronger than a short PIN. If a page reloads when you unlock, unsaved form input on it is lost. Full details are in the project's README.
+
+## Resubmission note (if the dashboard or an appeal asks what changed)
+0.1.1 was rejected because restoring tabs could not be reproduced. In 0.1.4, locking
+keeps tabs open behind a lock screen by default, and one correct PIN brings every tab
+back, including after a browser restart that did not restore them; the close-and-reopen
+behaviour is now the optional "Lockdown mode". Every feature in the description was
+re-tested from the package in fresh Chrome and Brave profiles. Step-by-step test
+instructions (about 2 minutes, PIN 123456) are in the "Test instructions" field.
 
 ## Single purpose (Privacy practices tab)
 Lock the browser behind a PIN: hide the user's open tabs while locked and require the PIN
